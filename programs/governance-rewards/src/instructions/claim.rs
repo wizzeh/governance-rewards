@@ -42,7 +42,7 @@ pub struct Claim<'info> {
         seeds = [distribution.realm.as_ref(), b"preferences".as_ref(), claimant.key().as_ref()],
         bump
     )]
-    preferences: Account<'info, UserPreferences>,
+    preferences: AccountInfo<'info>,
 
     claimant: AccountInfo<'info>,
 
@@ -140,7 +140,8 @@ pub fn claim(ctx: Context<Claim>) -> Result<()> {
         .checked_add(ctx.accounts.user_data.weight)
         .unwrap();
 
-    match ctx.accounts.preferences.resolution_preference {
+    let preferences = UserPreferences::get_or_default(&ctx.accounts.preferences);
+    match preferences.resolution_preference {
         ResolutionPreference::Wallet => ctx.accounts.assert_payout_is_ata()?,
         ResolutionPreference::Escrow => ctx.accounts.assert_payout_is_escrow()?,
     }

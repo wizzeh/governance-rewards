@@ -18,3 +18,11 @@ impl Default for ResolutionPreference {
         Self::Wallet
     }
 }
+
+impl UserPreferences {
+    pub fn get_or_default(account: &AccountInfo) -> Self {
+        Account::<UserPreferences>::try_from(account)
+            .map(|acct| *acct)
+            .unwrap_or_default()
+    }
+}

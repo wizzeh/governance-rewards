@@ -67,9 +67,7 @@ pub fn register_for_rewards(ctx: Context<RegisterForRewards>) -> Result<()> {
         .checked_add(weight)
         .unwrap();
 
-    let preferences = Account::<UserPreferences>::try_from(&ctx.accounts.preferences)
-        .map(|acct| *acct)
-        .unwrap_or_default();
+    let preferences = UserPreferences::get_or_default(&ctx.accounts.preferences);
 
     let (index, preferred_distribution_option) = ctx
         .accounts
