@@ -1,0 +1,64 @@
+use anchor_lang::prelude::*;
+use anchor_spl::token::{self, Token, TokenAccount};
+
+use crate::{error::GovernanceRewardsError, state::distribution::Distribution};
+
+#[derive(Accounts)]
+pub struct ReclaimFunds<'info> {
+    admin: Signer<'info>,
+
+    from: Account<'info, TokenAccount>,
+
+    to: Account<'info, TokenAccount>,
+
+    distribution: Account<'info, Distribution>,
+
+    #[account(seeds = [b"payout authority".as_ref(), distribution.key().as_ref()], bump)]
+    pub payout_authority: AccountInfo<'info>,
+
+    token_program: Program<'info, Token>,
+}
+
+impl<'info> ReclaimFunds<'info> {
+    pub fn transfer_context(&self) -> CpiContext<'_, '_, '_, 'info, token::Transfer<'info>> {
+        let token_program = self.token_program.to_account_info();
+
+        let to = self.to.to_account_info();
+
+        let accounts = token::Transfer {
+            from: self.from.to_account_info(),
+            to,
+            authority: self.payout_authority.to_account_info(),
+        };
+        CpiContext::new(token_program, accounts)
+    }
+}
+
+pub fn reclaim_funds(ctx: Context<ReclaimFunds>) -> Result<()> {
+    require!(
+        ctx.accounts.distribution.admin == ctx.accounts.admin.key(),
+        GovernanceRewardsError::AdminOnly
+    );
+    require!(
+        !ctx.accounts.distribution.can_register(),
+        GovernanceRewardsError::CannotReclaimFunds
+    );
+
+    let option = *ctx
+        .accounts
+        .distribution
+        .distribution_options
+        .with_wallet(ctx.accounts.from.key())
+        .ok_or(GovernanceRewardsError::NoMatchingOption)?;
+
+    let reclaimable_funds = ctx.accounts.distribution.calculate_unused_rewards(option);
+
+    token::transfer(
+        ctx.accounts.transfer_context().with_signer(&[&[
+            b"payout authority".as_ref(),
+            ctx.accounts.distribution.key().as_ref(),
+            &[ctx.bumps["payout_authority"]],
+        ]]),
+        reclaimable_funds,
+    )
+}
