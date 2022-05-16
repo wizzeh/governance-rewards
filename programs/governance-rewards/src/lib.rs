@@ -11,8 +11,6 @@ declare_id!("Fg6PaFpoGXkYsidMpWTK6W2BeZ7FEfcYkg476zPFsLnS");
 
 #[program]
 pub mod governance_rewards {
-    use state::preferences::ResolutionPreference;
-
     use super::*;
 
     pub fn claim(ctx: Context<Claim>) -> Result<()> {
