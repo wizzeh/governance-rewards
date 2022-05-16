@@ -16,15 +16,18 @@ use crate::{
 
 #[derive(Accounts)]
 pub struct Claim<'info> {
+    #[account(mut)]
     distribution: Account<'info, Distribution>,
 
     #[account(
+        mut,
         seeds = [distribution.key().as_ref(), b"user data".as_ref(), claimant.key().as_ref()],
         bump
     )]
     user_data: Account<'info, ClaimData>,
 
     #[account(
+        mut,
         address = user_data.chosen_option(&distribution).wallet
     )]
     rewards_account: Account<'info, TokenAccount>,

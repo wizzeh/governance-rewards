@@ -9,6 +9,7 @@ use crate::error::GovernanceRewardsError;
 pub struct DistributionOption {
     pub total_vote_weight: u64,
     pub total_amount: u64,
+    pub extra_reclaimed: bool,
     pub mint: Pubkey,
     pub wallet: Pubkey,
 }
@@ -32,8 +33,10 @@ impl DistributionOptions {
         Err(GovernanceRewardsError::NoDistributionOptions.into())
     }
 
-    pub fn with_wallet(&mut self, wallet: Pubkey) -> Option<&DistributionOption> {
-        self.iter().flatten().find(|option| option.wallet == wallet)
+    pub fn with_wallet(&mut self, wallet: Pubkey) -> Option<&mut DistributionOption> {
+        self.iter_mut()
+            .flatten()
+            .find(|option| option.wallet == wallet)
     }
 
     pub fn from_accounts(infos: &[AccountInfo], authority: Pubkey) -> Self {
@@ -48,6 +51,7 @@ impl DistributionOptions {
                     wallet: some_acct.key(),
                     total_vote_weight: 0,
                     total_amount: some_acct.amount,
+                    extra_reclaimed: false,
                 })
             })
             .collect::<Vec<Option<DistributionOption>>>();

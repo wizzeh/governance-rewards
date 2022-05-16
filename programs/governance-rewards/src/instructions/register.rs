@@ -20,6 +20,7 @@ pub struct RegisterForRewards<'info> {
     )]
     voter_weight_record: Account<'info, VoterWeightRecord>,
 
+    #[account(mut)]
     distribution: Account<'info, Distribution>,
 
     #[account(

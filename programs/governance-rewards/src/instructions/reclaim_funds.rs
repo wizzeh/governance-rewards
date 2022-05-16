@@ -7,10 +7,13 @@ use crate::{error::GovernanceRewardsError, state::distribution::Distribution};
 pub struct ReclaimFunds<'info> {
     admin: Signer<'info>,
 
+    #[account(mut)]
     from: Account<'info, TokenAccount>,
 
+    #[account(mut)]
     to: Account<'info, TokenAccount>,
 
+    #[account(mut)]
     distribution: Account<'info, Distribution>,
 
     #[account(seeds = [b"payout authority".as_ref(), distribution.key().as_ref()], bump)]
@@ -41,15 +44,25 @@ pub fn reclaim_funds(ctx: Context<ReclaimFunds>) -> Result<()> {
     );
     require!(
         !ctx.accounts.distribution.can_register(),
-        GovernanceRewardsError::CannotReclaimFunds
+        GovernanceRewardsError::CannotReclaimFundsYet
     );
 
-    let option = *ctx
-        .accounts
-        .distribution
-        .distribution_options
-        .with_wallet(ctx.accounts.from.key())
-        .ok_or(GovernanceRewardsError::NoMatchingOption)?;
+    let option = {
+        let mut_option = ctx
+            .accounts
+            .distribution
+            .distribution_options
+            .with_wallet(ctx.accounts.from.key())
+            .ok_or(GovernanceRewardsError::NoMatchingOption)?;
+
+        require!(
+            !mut_option.extra_reclaimed,
+            GovernanceRewardsError::AlreadyReclaimed
+        );
+
+        mut_option.extra_reclaimed = true;
+        *mut_option
+    };
 
     let reclaimable_funds = ctx.accounts.distribution.calculate_unused_rewards(option);
 

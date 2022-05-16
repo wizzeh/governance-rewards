@@ -42,5 +42,7 @@ pub enum GovernanceRewardsError {
     #[msg("No distribution option matching the provided wallet")]
     NoMatchingOption,
     #[msg("Cannot reclaim excess funds until the registration period is over")]
-    CannotReclaimFunds,
+    CannotReclaimFundsYet,
+    #[msg("Already reclaimed funds")]
+    AlreadyReclaimed,
 }
