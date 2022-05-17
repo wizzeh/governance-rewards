@@ -1,7 +1,9 @@
 use anchor_lang::prelude::*;
 use anchor_spl::token::{self, Token, TokenAccount};
 
-use crate::{error::GovernanceRewardsError, state::distribution::Distribution};
+use crate::{
+    distribution_payout_seeds, error::GovernanceRewardsError, state::distribution::Distribution,
+};
 
 #[derive(Accounts)]
 pub struct ReclaimFunds<'info> {
@@ -67,11 +69,12 @@ pub fn reclaim_funds(ctx: Context<ReclaimFunds>) -> Result<()> {
     let reclaimable_funds = ctx.accounts.distribution.calculate_unused_rewards(option);
 
     token::transfer(
-        ctx.accounts.transfer_context().with_signer(&[&[
-            b"payout authority".as_ref(),
-            ctx.accounts.distribution.key().as_ref(),
-            &[ctx.bumps["payout_authority"]],
-        ]]),
+        ctx.accounts
+            .transfer_context()
+            .with_signer(distribution_payout_seeds!(
+                ctx.accounts.distribution,
+                ctx.bumps
+            )),
         reclaimable_funds,
     )
 }

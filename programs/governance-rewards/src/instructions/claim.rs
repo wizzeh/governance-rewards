@@ -6,6 +6,7 @@ use anchor_spl::{
 use std::mem::size_of;
 
 use crate::{
+    distribution_payout_seeds,
     error::GovernanceRewardsError,
     state::{
         claim_data::ClaimData,
@@ -147,11 +148,12 @@ pub fn claim(ctx: Context<Claim>) -> Result<()> {
     }
 
     token::transfer(
-        ctx.accounts.transfer_context().with_signer(&[&[
-            b"payout authority".as_ref(),
-            ctx.accounts.distribution.key().as_ref(),
-            &[ctx.bumps["payout_authority"]],
-        ]]),
+        ctx.accounts
+            .transfer_context()
+            .with_signer(distribution_payout_seeds!(
+                ctx.accounts.distribution,
+                ctx.bumps
+            )),
         rewards,
     )
 }

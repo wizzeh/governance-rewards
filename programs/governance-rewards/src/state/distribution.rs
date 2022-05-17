@@ -51,3 +51,14 @@ impl Distribution {
             .unwrap()
     }
 }
+
+#[macro_export]
+macro_rules! distribution_payout_seeds {
+    ( $distribution: expr, $bumps: expr ) => {
+        &[&[
+            b"payout authority".as_ref(),
+            $distribution.key().as_ref(),
+            &[$bumps["payout_authority"]],
+        ]]
+    };
+}
