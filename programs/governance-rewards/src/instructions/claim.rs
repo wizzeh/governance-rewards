@@ -33,20 +33,24 @@ pub struct Claim<'info> {
     )]
     rewards_account: Account<'info, TokenAccount>,
 
+    /// CHECK: Not read
     #[account(seeds = [b"payout authority".as_ref(), distribution.key().as_ref()], bump)]
     payout_authority: AccountInfo<'info>,
 
     #[account(init_if_needed, payer = caller, space = size_of::<TokenAccount>())]
     to_account: Account<'info, TokenAccount>,
 
+    /// CHECK: Manually deserialized
     #[account(
         seeds = [distribution.realm.as_ref(), b"preferences".as_ref(), claimant.key().as_ref()],
         bump
     )]
     preferences: AccountInfo<'info>,
 
+    /// CHECK: Not read
     claimant: AccountInfo<'info>,
 
+    /// CHECK: Not read
     #[account(mut)]
     caller: AccountInfo<'info>,
 

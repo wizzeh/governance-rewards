@@ -13,13 +13,16 @@ pub struct CreateDistribution<'info> {
         payer = payer,
         space = 8 + size_of::<Distribution>()
     )]
-    pub distribution: Account<'info, Distribution>,
+    pub distribution: Box<Account<'info, Distribution>>,
 
+    /// CHECK: Not read
     #[account(seeds = [b"payout authority".as_ref(), distribution.key().as_ref()], bump)]
     pub payout_authority: AccountInfo<'info>,
 
+    /// CHECK: Not read
     pub realm: AccountInfo<'info>,
 
+    /// CHECK: Not read
     pub voter_weight_program: AccountInfo<'info>,
 
     #[account(mut)]
@@ -45,7 +48,7 @@ pub fn create_distribution(
         distribution_options: DistributionOptions::from_accounts(
             ctx.remaining_accounts,
             ctx.accounts.payout_authority.key(),
-        ),
+        )?,
         voter_weight_program: ctx.accounts.voter_weight_program.key(),
         admin: ctx.accounts.payer.key(),
     });

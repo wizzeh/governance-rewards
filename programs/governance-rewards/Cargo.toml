@@ -24,3 +24,8 @@ anchor-spl = "0.24.2"
 borsh = "0.9.1"
 spl-governance = "2.2.4"
 spl-governance-addin-api = "0.1.2"
+
+[dev-dependencies]
+solana-program = "^1.9.22"
+solana-program-test = "^1.9.13"
+solana-sdk = "^1.9.22"

@@ -45,4 +45,7 @@ pub enum GovernanceRewardsError {
     CannotReclaimFundsYet,
     #[msg("Already reclaimed funds")]
     AlreadyReclaimed,
+
+    #[msg("Provided account is not owned by the payout authority")]
+    TokenAccountNotOwned,
 }

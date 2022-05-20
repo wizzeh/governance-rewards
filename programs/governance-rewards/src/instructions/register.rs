@@ -23,6 +23,7 @@ pub struct RegisterForRewards<'info> {
     #[account(mut)]
     distribution: Account<'info, Distribution>,
 
+    /// CHECK: Manually deserialized
     #[account(
         seeds = [distribution.realm.as_ref(), b"preferences".as_ref(), registrant.key().as_ref()],
         bump
@@ -38,6 +39,7 @@ pub struct RegisterForRewards<'info> {
     )]
     claim_data: Account<'info, ClaimData>,
 
+    /// CHECK: Not read
     registrant: AccountInfo<'info>,
 
     #[account(mut)]

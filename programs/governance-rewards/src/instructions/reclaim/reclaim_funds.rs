@@ -18,6 +18,7 @@ pub struct ReclaimFunds<'info> {
     #[account(mut)]
     distribution: Account<'info, Distribution>,
 
+    /// CHECK: Not read
     #[account(seeds = [b"payout authority".as_ref(), distribution.key().as_ref()], bump)]
     pub payout_authority: AccountInfo<'info>,
 

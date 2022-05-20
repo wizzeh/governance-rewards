@@ -11,6 +11,7 @@ pub struct SetPreferredMint<'info> {
     )]
     preferences: Account<'info, UserPreferences>,
 
+    /// CHECK: Not read
     realm: AccountInfo<'info>,
 
     user: Signer<'info>,

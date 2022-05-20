@@ -5,7 +5,7 @@ use anchor_spl::token::TokenAccount;
 
 use crate::error::GovernanceRewardsError;
 
-#[derive(AnchorDeserialize, AnchorSerialize, Clone, Default, Copy, Debug)]
+#[derive(AnchorDeserialize, AnchorSerialize, Clone, Default, Copy, Debug, PartialEq, Eq)]
 pub struct DistributionOption {
     pub total_vote_weight: u64,
     pub total_amount: u64,
@@ -14,7 +14,7 @@ pub struct DistributionOption {
     pub wallet: Pubkey,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, Copy)]
+#[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, Copy, Debug, PartialEq, Eq)]
 pub struct DistributionOptions([Option<DistributionOption>; 8]);
 
 impl DistributionOptions {
@@ -39,24 +39,37 @@ impl DistributionOptions {
             .find(|option| option.wallet == wallet)
     }
 
-    pub fn from_accounts(infos: &[AccountInfo], authority: Pubkey) -> Self {
+    pub fn from_accounts(infos: &[AccountInfo], authority: Pubkey) -> Result<Self> {
         let mut options = infos
             .iter()
             .map(Account::<TokenAccount>::try_from)
-            .map(|acct| acct.ok())
-            .map(|acct| acct.filter(|acct| acct.owner == authority))
-            .map(|account| {
-                account.map(|some_acct| DistributionOption {
-                    mint: some_acct.mint,
-                    wallet: some_acct.key(),
-                    total_vote_weight: 0,
-                    total_amount: some_acct.amount,
-                    extra_reclaimed: false,
+            .map(|acct| {
+                acct.and_then(|acct| {
+                    if acct.owner == authority {
+                        Ok(acct)
+                    } else {
+                        Err(GovernanceRewardsError::TokenAccountNotOwned.into())
+                    }
                 })
             })
-            .collect::<Vec<Option<DistributionOption>>>();
+            .map(|account| {
+                account.map(|some_acct| {
+                    Some(DistributionOption {
+                        mint: some_acct.mint,
+                        wallet: some_acct.key(),
+                        total_vote_weight: 0,
+                        total_amount: some_acct.amount,
+                        extra_reclaimed: false,
+                    })
+                })
+            })
+            .collect::<Result<Vec<_>>>()?;
         options.resize(8, None);
-        DistributionOptions(options.try_into().unwrap())
+        Ok(DistributionOptions(options.try_into().unwrap()))
+    }
+
+    pub fn empty() -> Self {
+        Self([None; 8])
     }
 }
 

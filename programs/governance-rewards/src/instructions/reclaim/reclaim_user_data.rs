@@ -15,6 +15,7 @@ pub struct ReclaimUserData<'info> {
     )]
     claim_data: Account<'info, ClaimData>,
 
+    /// CHECK: Not read
     caller: AccountInfo<'info>,
 }
 

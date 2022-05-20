@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use super::distribution_option::{DistributionOption, DistributionOptions};
 
 #[account]
+#[derive(Debug, PartialEq, Eq)]
 pub struct Distribution {
     pub registration_period_end_ts: u64,
     pub voter_weight_program: Pubkey,
@@ -49,6 +50,10 @@ impl Distribution {
             .unwrap()
             .checked_div(self.total_vote_weight as u128)
             .unwrap()
+    }
+
+    pub fn get_payout_authority(key: Pubkey) -> Pubkey {
+        Pubkey::find_program_address(&[b"payout authority".as_ref(), key.as_ref()], &crate::id()).0
     }
 }
 
