@@ -1071,6 +1071,7 @@ dependencies = [
  "solana-sdk",
  "spl-governance",
  "spl-governance-addin-api",
+ "spl-governance-tools",
 ]
 
 [[package]]

@@ -1,12 +1,18 @@
 use std::sync::Arc;
 
-use anchor_lang::prelude::{AccountMeta, Pubkey};
+use anchor_lang::{
+    prelude::{AccountMeta, Pubkey},
+    AccountSerialize, AnchorSerialize,
+};
 use governance_rewards::state::{
-    distribution::Distribution, distribution_option::DistributionOptions,
+    addin::VoterWeightRecord, claim_data::ClaimData, distribution::Distribution,
+    distribution_option::DistributionOptions, preferences::UserPreferences,
 };
 use solana_program::instruction::Instruction;
 use solana_program_test::{processor, ProgramTest};
-use solana_sdk::{signature::Keypair, signer::Signer, transport::TransportError};
+use solana_sdk::{
+    account::AccountSharedData, signature::Keypair, signer::Signer, transport::TransportError,
+};
 
 use super::{
     governance_test::{GovernanceTest, RealmCookie},
@@ -25,6 +31,16 @@ pub struct DistributionCookie {
 #[derive(Debug)]
 pub struct DistributionKeyCookie {
     pub keypair: Keypair,
+}
+
+#[derive(Debug)]
+pub struct RegistrantCookie {}
+
+#[derive(Debug)]
+pub struct VoterWeightRecordCookie {
+    pub address: Pubkey,
+    pub user: Pubkey,
+    pub weight: u64,
 }
 
 pub struct GovernanceRewardsTest {
@@ -168,5 +184,115 @@ impl GovernanceRewardsTest {
     ) -> Result<TokenAccountCookie, TransportError> {
         let owner = Distribution::get_payout_authority(distribution.keypair.pubkey());
         self.bench.with_tokens(mint, &owner, amount).await
+    }
+
+    pub async fn with_dummy_voter_weight_record(
+        &mut self,
+        realm: &RealmCookie,
+        governing_token: &MintCookie,
+        distribution: &DistributionCookie,
+        governing_token_owner: Pubkey,
+        weight: u64,
+        expiry_slot: u64,
+    ) -> Result<VoterWeightRecordCookie, TransportError> {
+        let key = Keypair::new().pubkey();
+        let data = VoterWeightRecord::create_test(
+            realm.address,
+            governing_token.address,
+            governing_token_owner,
+            distribution.address,
+            weight,
+            Some(expiry_slot),
+        )
+        .try_to_vec()
+        .unwrap();
+
+        let lamports = {
+            let rent = self
+                .bench
+                .context
+                .borrow_mut()
+                .banks_client
+                .get_rent()
+                .await?;
+            rent.minimum_balance(data.len())
+        };
+
+        let mut account_data = AccountSharedData::new(
+            lamports,
+            data.len(),
+            &distribution.account.voter_weight_program,
+        );
+        account_data.set_data(data);
+        self.bench
+            .context
+            .borrow_mut()
+            .set_account(&key, &account_data);
+
+        Ok(VoterWeightRecordCookie {
+            address: key,
+            user: governing_token_owner,
+            weight,
+        })
+    }
+
+    pub async fn with_registrant(
+        &mut self,
+        distribution_cookie: &DistributionCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
+    ) -> Result<RegistrantCookie, TransportError> {
+        self.with_registrant_using_ix(
+            distribution_cookie,
+            voter_weight_record_cookie,
+            NopOverride,
+            None,
+        )
+        .await
+    }
+
+    pub async fn with_registrant_using_ix<F: Fn(&mut Instruction)>(
+        &mut self,
+        distribution_cookie: &DistributionCookie,
+        voter_weight_record_cookie: &VoterWeightRecordCookie,
+        instruction_override: F,
+        signers_override: Option<&[&Keypair]>,
+    ) -> Result<RegistrantCookie, TransportError> {
+        let data =
+            anchor_lang::InstructionData::data(&governance_rewards::instruction::Register {});
+        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
+            &governance_rewards::accounts::RegisterForRewards {
+                voter_weight_record: voter_weight_record_cookie.address,
+                distribution: distribution_cookie.address,
+                preferences: UserPreferences::get_address(
+                    voter_weight_record_cookie.user,
+                    distribution_cookie.account.realm,
+                ),
+                claim_data: ClaimData::get_address(
+                    voter_weight_record_cookie.user,
+                    distribution_cookie.address,
+                ),
+                registrant: voter_weight_record_cookie.user,
+                payer: self.bench.payer.pubkey(),
+                system_program: solana_sdk::system_program::id(),
+            },
+            None,
+        );
+
+        let mut register_ix = Instruction {
+            program_id: governance_rewards::id(),
+            accounts,
+            data,
+        };
+
+        instruction_override(&mut register_ix);
+
+        let default_signers = &[&self.bench.payer];
+        let signers = signers_override.unwrap_or(default_signers);
+
+        self.bench
+            .process_transaction(&[register_ix], Some(signers))
+            .await?;
+
+        Ok(RegistrantCookie {})
     }
 }

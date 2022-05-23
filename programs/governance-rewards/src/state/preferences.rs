@@ -25,4 +25,12 @@ impl UserPreferences {
             .map(|acct| *acct)
             .unwrap_or_default()
     }
+
+    pub fn get_address(user: Pubkey, realm: Pubkey) -> Pubkey {
+        Pubkey::find_program_address(
+            &[realm.as_ref(), b"preferences".as_ref(), user.as_ref()],
+            &crate::id(),
+        )
+        .0
+    }
 }

@@ -30,39 +30,6 @@ pub fn assert_governance_rewards_err(
     };
 }
 
-// #[allow(dead_code)]
-// pub fn assert_nft_voter_err(banks_client_error: TransportError, nft_locker_error: NftVoterError) {
-//     let tx_error = banks_client_error.unwrap();
-
-//     match tx_error {
-//         TransactionError::InstructionError(_, instruction_error) => match instruction_error {
-//             InstructionError::Custom(e) => {
-//                 assert_eq!(e, nft_locker_error as u32 + ERROR_CODE_OFFSET)
-//             }
-//             _ => panic!("{:?} Is not InstructionError::Custom()", instruction_error),
-//         },
-//         _ => panic!("{:?} Is not InstructionError", tx_error),
-//     };
-// }
-
-// #[allow(dead_code)]
-// pub fn assert_gov_tools_err(
-//     banks_client_error: TransportError,
-//     gov_tools_error: GovernanceToolsError,
-// ) {
-//     let tx_error = banks_client_error.unwrap();
-
-//     match tx_error {
-//         TransactionError::InstructionError(_, instruction_error) => match instruction_error {
-//             InstructionError::Custom(e) => {
-//                 assert_eq!(e, gov_tools_error as u32)
-//             }
-//             _ => panic!("{:?} Is not InstructionError::Custom()", instruction_error),
-//         },
-//         _ => panic!("{:?} Is not InstructionError", tx_error),
-//     };
-// }
-
 #[allow(dead_code)]
 pub fn assert_anchor_err(
     banks_client_error: TransportError,

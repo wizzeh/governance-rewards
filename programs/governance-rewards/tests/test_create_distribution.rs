@@ -2,11 +2,12 @@ use governance_rewards::{
     error::GovernanceRewardsError, state::distribution_option::DistributionOption,
 };
 use program_test::{
-    governance_rewards_test::GovernanceRewardsTest, tools::assert_governance_rewards_err,
+    governance_rewards_test::GovernanceRewardsTest,
+    tools::{assert_anchor_err, assert_governance_rewards_err},
 };
 use solana_sdk::{signature::Keypair, signer::Signer, transport::TransportError};
 
-use crate::program_test::*;
+use crate::program_test::{program_test_bench::TokenAccountCookie, *};
 use solana_program_test::*;
 
 mod program_test;
@@ -127,6 +128,34 @@ async fn test_create_distribution_with_funding_not_owned_err() -> TestOutcome {
 
     // Assert
     assert_governance_rewards_err(err, GovernanceRewardsError::TokenAccountNotOwned);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn test_create_distribution_with_non_token_funding_account_err() -> TestOutcome {
+    // Arrange
+    let mut governance_rewards_test = GovernanceRewardsTest::start_new().await;
+    let realm_cookie = governance_rewards_test.governance.with_realm().await?;
+    let key_cookie = governance_rewards_test.with_distribution_keypair();
+    let fake_token_cookie = TokenAccountCookie {
+        address: Keypair::new().pubkey(),
+    };
+
+    // Act
+    let err = governance_rewards_test
+        .with_distribution(
+            &realm_cookie,
+            &key_cookie,
+            u64::max_value(),
+            &[&fake_token_cookie],
+        )
+        .await
+        .err()
+        .unwrap();
+
+    // Assert
+    assert_anchor_err(err, anchor_lang::error::ErrorCode::AccountNotInitialized);
 
     Ok(())
 }
