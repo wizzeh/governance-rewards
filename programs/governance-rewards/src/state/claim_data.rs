@@ -3,6 +3,7 @@ use anchor_lang::prelude::*;
 use super::{distribution::Distribution, distribution_option::DistributionOption};
 
 #[account]
+#[derive(Debug)]
 pub struct ClaimData {
     pub weight: u64,
     pub distribution: Pubkey,
