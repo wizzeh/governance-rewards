@@ -6,6 +6,10 @@ use anchor_lang::prelude::*;
 
 pub use temp_override::VoterWeightAction;
 
+use crate::error::GovernanceRewardsError;
+
+use super::distribution::Distribution;
+
 #[derive(Clone)]
 pub struct VoterWeightRecord(temp_override::VoterWeightRecord);
 
@@ -33,19 +37,54 @@ impl DerefMut for VoterWeightRecord {
     }
 }
 
-impl Owner for VoterWeightRecord {
-    fn owner() -> Pubkey {
-        // This program does not issue Voter Weight Records, so this should not normally be used.
-        crate::ID
+pub struct Unvalidated<T> {
+    inner: T,
+}
+
+impl Unvalidated<VoterWeightRecord> {
+    pub fn validate(
+        self,
+        distribution: &Account<Distribution>,
+        registrant: &Pubkey,
+    ) -> Result<VoterWeightRecord> {
+        require!(
+            self.inner.is_not_expired(Clock::get()?),
+            GovernanceRewardsError::OutdatedVoteWeightRecord
+        );
+        require!(
+            self.inner.weight_action == Some(VoterWeightAction::RegisterForRewards),
+            GovernanceRewardsError::WrongAction
+        );
+        require!(
+            self.inner.weight_action_target == Some(distribution.key()),
+            GovernanceRewardsError::WrongActionTarget
+        );
+        require!(
+            self.inner.realm == distribution.realm,
+            GovernanceRewardsError::WrongRealm
+        );
+        require!(
+            self.inner.governing_token_owner == registrant.key(),
+            GovernanceRewardsError::WrongRegistrant
+        );
+
+        Ok(self.inner)
     }
 }
 
 impl VoterWeightRecord {
-    pub fn is_still_valid(&self, clock: Clock) -> bool {
+    pub fn is_not_expired(&self, clock: Clock) -> bool {
         match self.voter_weight_expiry {
             Some(slot) => slot >= clock.slot,
             None => true,
         }
+    }
+
+    pub fn try_from(account: &AccountInfo<'_>) -> Result<Unvalidated<Self>> {
+        let mut data: &[u8] = &account.try_borrow_data()?;
+        VoterWeightRecord::try_deserialize(&mut data)
+            .map(|record| Unvalidated { inner: record })
+            .map_err(|_| ErrorCode::AccountDidNotDeserialize.into())
     }
 
     pub fn create_test(

@@ -34,7 +34,9 @@ pub struct DistributionKeyCookie {
 }
 
 #[derive(Debug)]
-pub struct RegistrantCookie {}
+pub struct RegistrantCookie {
+    user: Pubkey,
+}
 
 #[derive(Debug)]
 pub struct VoterWeightRecordCookie {
@@ -87,6 +89,22 @@ impl GovernanceRewardsTest {
         DistributionKeyCookie {
             keypair: Keypair::new(),
         }
+    }
+
+    pub async fn with_funded_distribution(
+        &mut self,
+        realm_cookie: &RealmCookie,
+        key: &DistributionKeyCookie,
+        registration_cutoff: u64,
+    ) -> Result<DistributionCookie, TransportError> {
+        let funding_amount = 100;
+        let funding_mint = self.bench.with_mint().await?;
+        let funding_account = self
+            .with_owned_tokens(&funding_mint, key, funding_amount)
+            .await?;
+
+        self.with_distribution(realm_cookie, key, registration_cutoff, &[&funding_account])
+            .await
     }
 
     pub async fn with_distribution(
@@ -194,6 +212,7 @@ impl GovernanceRewardsTest {
         governing_token_owner: Pubkey,
         weight: u64,
         expiry_slot: u64,
+        owner_override: Option<Pubkey>,
     ) -> Result<VoterWeightRecordCookie, TransportError> {
         let key = Keypair::new().pubkey();
         let data = VoterWeightRecord::create_test(
@@ -221,7 +240,7 @@ impl GovernanceRewardsTest {
         let mut account_data = AccountSharedData::new(
             lamports,
             data.len(),
-            &distribution.account.voter_weight_program,
+            &owner_override.unwrap_or(distribution.account.voter_weight_program),
         );
         account_data.set_data(data);
         self.bench
@@ -293,6 +312,8 @@ impl GovernanceRewardsTest {
             .process_transaction(&[register_ix], Some(signers))
             .await?;
 
-        Ok(RegistrantCookie {})
+        Ok(RegistrantCookie {
+            user: voter_weight_record_cookie.user,
+        })
     }
 }

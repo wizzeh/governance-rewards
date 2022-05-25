@@ -12,16 +12,11 @@ use crate::{error::GovernanceRewardsError, state::preferences::UserPreferences};
 pub struct RegisterForRewards<'info> {
     #[account(
         owner=distribution.voter_weight_program,
-        constraint = voter_weight_record.is_still_valid(Clock::get()?) @ GovernanceRewardsError::OutdatedVoteWeightRecord,
-        constraint = voter_weight_record.weight_action == Some(VoterWeightAction::RegisterForRewards.into()) @ GovernanceRewardsError::WrongAction,
-        constraint = voter_weight_record.weight_action_target == Some(distribution.key()) @ GovernanceRewardsError::WrongActionTarget,
-        constraint = voter_weight_record.realm == distribution.realm @ GovernanceRewardsError::WrongRealm,
-        constraint = voter_weight_record.governing_token_owner == registrant.key() @ GovernanceRewardsError::WrongRegistrant
     )]
-    voter_weight_record: Account<'info, VoterWeightRecord>,
+    voter_weight_record: AccountInfo<'info>,
 
     #[account(mut)]
-    distribution: Account<'info, Distribution>,
+    distribution: Box<Account<'info, Distribution>>,
 
     /// CHECK: Manually deserialized
     #[account(
@@ -49,12 +44,16 @@ pub struct RegisterForRewards<'info> {
 }
 
 pub fn register_for_rewards(ctx: Context<RegisterForRewards>) -> Result<()> {
+    let voter_weight_record = VoterWeightRecord::try_from(&ctx.accounts.voter_weight_record)?;
+    let voter_weight_record =
+        voter_weight_record.validate(&ctx.accounts.distribution, &ctx.accounts.registrant.key())?;
+
     require!(
         ctx.accounts.distribution.can_register(),
         GovernanceRewardsError::RegistrationOver
     );
 
-    let weight = ctx.accounts.voter_weight_record.voter_weight;
+    let weight = voter_weight_record.voter_weight;
     require!(weight > 0, GovernanceRewardsError::NoVoteWeight);
 
     require!(
