@@ -26,7 +26,9 @@ pub struct CreateDistribution<'info> {
     pub voter_weight_program: AccountInfo<'info>,
 
     #[account(mut)]
-    pub payer: Signer<'info>,
+    pub payer: AccountInfo<'info>,
+
+    pub admin: Signer<'info>,
 
     system_program: Program<'info, System>,
 }
@@ -50,7 +52,7 @@ pub fn create_distribution(
             ctx.accounts.payout_authority.key(),
         )?,
         voter_weight_program: ctx.accounts.voter_weight_program.key(),
-        admin: ctx.accounts.payer.key(),
+        admin: ctx.accounts.admin.key(),
     });
 
     Ok(())

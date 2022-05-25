@@ -23,6 +23,7 @@ use super::{
 #[derive(Debug)]
 pub struct DistributionCookie {
     pub address: Pubkey,
+    pub admin: Keypair,
     pub account: Distribution,
 
     pub registration_cutoff: u64,
@@ -139,6 +140,7 @@ impl GovernanceRewardsTest {
                 registration_cutoff,
             },
         );
+        let admin = Keypair::new();
 
         let mut accounts = anchor_lang::ToAccountMetas::to_account_metas(
             &governance_rewards::accounts::CreateDistribution {
@@ -147,6 +149,7 @@ impl GovernanceRewardsTest {
                 realm: realm_cookie.address,
                 voter_weight_program: voter_weight_program(),
                 payer: self.bench.payer.pubkey(),
+                admin: admin.pubkey(),
                 system_program: solana_sdk::system_program::id(),
             },
             None,
@@ -164,7 +167,7 @@ impl GovernanceRewardsTest {
 
         instruction_override(&mut create_distribution_ix);
 
-        let default_signers = &[&key.keypair, &self.bench.payer];
+        let default_signers = &[&key.keypair, &admin];
         let signers = signers_override.unwrap_or(default_signers);
 
         self.bench
@@ -178,12 +181,13 @@ impl GovernanceRewardsTest {
             total_vote_weight: 0,
             total_vote_weight_claimed: 0,
             distribution_options: DistributionOptions::empty(),
-            admin: self.bench.payer.pubkey(),
+            admin: admin.pubkey(),
         };
 
         Ok(DistributionCookie {
             address: key.keypair.pubkey(),
             account,
+            admin,
             registration_cutoff,
         })
     }
@@ -206,25 +210,11 @@ impl GovernanceRewardsTest {
 
     pub async fn with_dummy_voter_weight_record(
         &mut self,
-        realm: &RealmCookie,
-        governing_token: &MintCookie,
-        distribution: &DistributionCookie,
-        governing_token_owner: Pubkey,
-        weight: u64,
-        expiry_slot: u64,
-        owner_override: Option<Pubkey>,
+        record: &VoterWeightRecord,
+        owner: Pubkey,
     ) -> Result<VoterWeightRecordCookie, TransportError> {
         let key = Keypair::new().pubkey();
-        let data = VoterWeightRecord::create_test(
-            realm.address,
-            governing_token.address,
-            governing_token_owner,
-            distribution.address,
-            weight,
-            Some(expiry_slot),
-        )
-        .try_to_vec()
-        .unwrap();
+        let data = record.try_to_vec().unwrap();
 
         let lamports = {
             let rent = self
@@ -237,11 +227,7 @@ impl GovernanceRewardsTest {
             rent.minimum_balance(data.len())
         };
 
-        let mut account_data = AccountSharedData::new(
-            lamports,
-            data.len(),
-            &owner_override.unwrap_or(distribution.account.voter_weight_program),
-        );
+        let mut account_data = AccountSharedData::new(lamports, data.len(), &owner);
         account_data.set_data(data);
         self.bench
             .context
@@ -250,8 +236,8 @@ impl GovernanceRewardsTest {
 
         Ok(VoterWeightRecordCookie {
             address: key,
-            user: governing_token_owner,
-            weight,
+            user: record.governing_token_owner,
+            weight: record.voter_weight,
         })
     }
 
