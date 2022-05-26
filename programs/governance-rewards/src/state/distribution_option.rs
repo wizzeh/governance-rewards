@@ -30,7 +30,7 @@ impl DistributionOptions {
         Err(GovernanceRewardsError::NoDistributionOptions.into())
     }
 
-    pub fn with_wallet(&mut self, wallet: Pubkey) -> Option<&mut DistributionOption> {
+    pub fn by_wallet(&mut self, wallet: Pubkey) -> Option<&mut DistributionOption> {
         self.iter_mut()
             .flatten()
             .find(|option| option.wallet == wallet)

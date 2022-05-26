@@ -55,7 +55,7 @@ pub fn reclaim_funds(ctx: Context<ReclaimFunds>) -> Result<()> {
             .accounts
             .distribution
             .distribution_options
-            .with_wallet(ctx.accounts.from.key())
+            .by_wallet(ctx.accounts.from.key())
             .ok_or(GovernanceRewardsError::NoMatchingOption)?;
 
         require!(
