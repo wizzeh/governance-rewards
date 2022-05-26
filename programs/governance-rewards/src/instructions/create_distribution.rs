@@ -25,6 +25,7 @@ pub struct CreateDistribution<'info> {
     /// CHECK: Not read
     pub voter_weight_program: AccountInfo<'info>,
 
+    /// CHECK: Not read
     #[account(mut)]
     pub payer: AccountInfo<'info>,
 

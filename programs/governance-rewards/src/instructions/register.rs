@@ -1,15 +1,12 @@
 use anchor_lang::prelude::*;
 use std::mem::size_of;
 
-use crate::state::{
-    addin::{VoterWeightAction, VoterWeightRecord},
-    claim_data::ClaimData,
-    distribution::Distribution,
-};
+use crate::state::{addin::VoterWeightRecord, claim_data::ClaimData, distribution::Distribution};
 use crate::{error::GovernanceRewardsError, state::preferences::UserPreferences};
 
 #[derive(Accounts)]
 pub struct RegisterForRewards<'info> {
+    /// CHECK: Manually deserialized
     #[account(
         owner=distribution.voter_weight_program,
     )]
