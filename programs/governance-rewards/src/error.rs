@@ -18,8 +18,6 @@ pub enum GovernanceRewardsError {
     NoDistributionOptions,
     #[msg("Vote weight record does not match registrant")]
     WrongRegistrant,
-    #[msg("Already registered for this rewards distribution")]
-    AlreadyRegistered,
 
     #[msg("Cannot create a distribution with a registration period ending in the past")]
     RegistrationCutoffInPast,

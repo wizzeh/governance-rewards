@@ -56,11 +56,6 @@ pub fn register_for_rewards(ctx: Context<RegisterForRewards>) -> Result<()> {
     let weight = voter_weight_record.voter_weight;
     require!(weight > 0, GovernanceRewardsError::NoVoteWeight);
 
-    require!(
-        ctx.accounts.claim_data.weight == 0,
-        GovernanceRewardsError::AlreadyRegistered
-    );
-
     ctx.accounts.distribution.total_vote_weight = ctx
         .accounts
         .distribution
