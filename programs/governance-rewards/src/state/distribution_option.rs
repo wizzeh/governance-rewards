@@ -18,15 +18,10 @@ pub struct DistributionOption {
 pub struct DistributionOptions([Option<DistributionOption>; 8]);
 
 impl DistributionOptions {
-    pub fn pick_one(&mut self, key: Option<Pubkey>) -> Result<(u8, &mut DistributionOption)> {
+    pub fn pick_by_mint(&mut self, key: Option<Pubkey>) -> Result<(u8, &mut DistributionOption)> {
         for (i, option) in self.iter_mut().flatten().enumerate() {
-            match key {
-                Some(k) => {
-                    if option.mint == k {
-                        return Ok((i as u8, option));
-                    }
-                }
-                None => return Ok((i as u8, option)),
+            if key.is_none() || key == Some(option.mint) {
+                return Ok((i as u8, option));
             }
         }
 

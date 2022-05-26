@@ -74,7 +74,7 @@ pub fn register_for_rewards(ctx: Context<RegisterForRewards>) -> Result<()> {
         .accounts
         .distribution
         .distribution_options
-        .pick_one(preferences.preferred_mint)?;
+        .pick_by_mint(preferences.preferred_mint)?;
 
     preferred_distribution_option.total_vote_weight = preferred_distribution_option
         .total_vote_weight
