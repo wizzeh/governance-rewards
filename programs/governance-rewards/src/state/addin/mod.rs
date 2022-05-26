@@ -4,6 +4,7 @@ use std::ops::{Deref, DerefMut};
 
 use anchor_lang::prelude::*;
 
+use solana_program::program_pack::IsInitialized;
 pub use temp_override::VoterWeightAction;
 
 use crate::error::GovernanceRewardsError;
@@ -18,6 +19,14 @@ impl AccountDeserialize for VoterWeightRecord {
         let record =
             AnchorDeserialize::deserialize(buf).map_err(|_| ErrorCode::AccountDidNotDeserialize)?;
         Ok(VoterWeightRecord(record))
+    }
+
+    fn try_deserialize(buf: &mut &[u8]) -> Result<Self> {
+        let record = Self::try_deserialize_unchecked(buf)?;
+        if !record.is_initialized() {
+            return Err(ErrorCode::AccountDidNotDeserialize.into());
+        }
+        Ok(record)
     }
 }
 
