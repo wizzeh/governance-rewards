@@ -14,6 +14,23 @@ pub struct DistributionOption {
     pub wallet: Pubkey,
 }
 
+impl DistributionOption {
+    fn try_from_account(account_info: &AccountInfo, authority: Pubkey) -> Result<Option<Self>> {
+        let token_account = Account::<TokenAccount>::try_from(account_info)?;
+        if token_account.owner != authority {
+            return Err(GovernanceRewardsError::TokenAccountNotOwned.into());
+        }
+
+        Ok(Some(DistributionOption {
+            mint: token_account.mint,
+            wallet: token_account.key(),
+            total_vote_weight: 0,
+            total_amount: token_account.amount,
+            extra_reclaimed: false,
+        }))
+    }
+}
+
 #[derive(AnchorSerialize, AnchorDeserialize, Clone, Default, Copy, Debug, PartialEq, Eq)]
 pub struct DistributionOptions([Option<DistributionOption>; 8]);
 
@@ -39,27 +56,7 @@ impl DistributionOptions {
     pub fn from_accounts(infos: &[AccountInfo], authority: Pubkey) -> Result<Self> {
         let mut options = infos
             .iter()
-            .map(Account::<TokenAccount>::try_from)
-            .map(|acct| {
-                acct.and_then(|acct| {
-                    if acct.owner == authority {
-                        Ok(acct)
-                    } else {
-                        Err(GovernanceRewardsError::TokenAccountNotOwned.into())
-                    }
-                })
-            })
-            .map(|account| {
-                account.map(|some_acct| {
-                    Some(DistributionOption {
-                        mint: some_acct.mint,
-                        wallet: some_acct.key(),
-                        total_vote_weight: 0,
-                        total_amount: some_acct.amount,
-                        extra_reclaimed: false,
-                    })
-                })
-            })
+            .map(|acct| DistributionOption::try_from_account(acct, authority))
             .collect::<Result<Vec<_>>>()?;
         options.resize(8, None);
         Ok(DistributionOptions(options.try_into().unwrap()))
