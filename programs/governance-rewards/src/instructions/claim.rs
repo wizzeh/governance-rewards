@@ -18,7 +18,7 @@ use crate::{
 #[derive(Accounts)]
 pub struct Claim<'info> {
     #[account(mut)]
-    distribution: Account<'info, Distribution>,
+    distribution: Box<Account<'info, Distribution>>,
 
     #[account(
         mut,

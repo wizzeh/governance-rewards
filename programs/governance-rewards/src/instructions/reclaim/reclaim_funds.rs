@@ -16,7 +16,7 @@ pub struct ReclaimFunds<'info> {
     to: Account<'info, TokenAccount>,
 
     #[account(mut)]
-    distribution: Account<'info, Distribution>,
+    distribution: Box<Account<'info, Distribution>>,
 
     /// CHECK: Not read
     #[account(seeds = [b"payout authority".as_ref(), distribution.key().as_ref()], bump)]
