@@ -15,6 +15,11 @@ use crate::{
     },
 };
 
+/**
+ * Instruction to redeem a claim.
+ *
+ * May only be called after the registration period ends.
+ */
 #[derive(Accounts)]
 pub struct Claim<'info> {
     #[account(mut)]
@@ -27,6 +32,12 @@ pub struct Claim<'info> {
     )]
     user_data: Account<'info, ClaimData>,
 
+    /**
+     * Account from which to pay out rewards.
+     *
+     * This account should be the Token Account associated with the user's chosen
+     * distribution option.
+     */
     #[account(
         mut,
         address = user_data.chosen_option(&distribution).wallet
@@ -37,9 +48,24 @@ pub struct Claim<'info> {
     #[account(seeds = [b"payout authority".as_ref(), distribution.key().as_ref()], bump)]
     payout_authority: AccountInfo<'info>,
 
+    /**
+     * Account to receive rewards payout.
+     *
+     * If `UserPreferences.resolution_preference == Wallet`, this should be the associated
+     * token program wallet associated with the claimant.
+     *
+     * If `UserPreferences.resolution_preference == Escrow`, this should be the user's
+     * escrow wallet for the mint. See `assert_payout_is_escrow` for the PDA seeds.
+     */
     #[account(init_if_needed, payer = caller, space = size_of::<TokenAccount>())]
     to_account: Account<'info, TokenAccount>,
 
+    /**
+     * User claim preferences.
+     *
+     * This account does not have the be initialized when it is passed to the program.
+     * If an empty account is provided, default preferences will be used.
+     */
     /// CHECK: Manually deserialized
     #[account(
         seeds = [distribution.realm.as_ref(), b"preferences".as_ref(), claimant.key().as_ref()],
@@ -47,6 +73,9 @@ pub struct Claim<'info> {
     )]
     preferences: AccountInfo<'info>,
 
+    /**
+     * User to receive rewards payout.
+     */
     /// CHECK: Not read
     claimant: AccountInfo<'info>,
 

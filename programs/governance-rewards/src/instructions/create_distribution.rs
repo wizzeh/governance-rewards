@@ -6,8 +6,17 @@ use crate::{
     state::{distribution::Distribution, distribution_option::DistributionOptions},
 };
 
+/**
+ * Instruction to create a Distribution.
+ *
+ * The caller must provide a registration_cutoff, which specifies the timestamp at
+ * which registration will end.
+ */
 #[derive(Accounts)]
 pub struct CreateDistribution<'info> {
+    /**
+     * Address of the distribution to be created.
+     */
     #[account(
         init,
         payer = payer,
@@ -15,13 +24,26 @@ pub struct CreateDistribution<'info> {
     )]
     pub distribution: Box<Account<'info, Distribution>>,
 
+    /**
+     * Account to own any provided token accounts.
+     */
     /// CHECK: Not read
     #[account(seeds = [b"payout authority".as_ref(), distribution.key().as_ref()], bump)]
     pub payout_authority: AccountInfo<'info>,
 
+    /**
+     * Realm to which the distribution belongs.
+     */
     /// CHECK: Not read
     pub realm: AccountInfo<'info>,
 
+    /**
+     * Choice of program to create voter weight records.
+     *
+     * The program will check whether presented voter weight records are owned by this
+     * account. For example, you might provide the address of the voter stake registry
+     * program.
+     */
     /// CHECK: Not read
     pub voter_weight_program: AccountInfo<'info>,
 
@@ -29,6 +51,11 @@ pub struct CreateDistribution<'info> {
     #[account(mut)]
     pub payer: AccountInfo<'info>,
 
+    /**
+     * Admin for the distribution.
+     *
+     * Currently this is used to determine who can reclaim unused funds.
+     */
     pub admin: Signer<'info>,
 
     system_program: Program<'info, System>,

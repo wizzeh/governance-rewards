@@ -3,6 +3,11 @@ use anchor_lang::prelude::*;
 use crate::state::{addin::VoterWeightRecord, claim_data::ClaimData, distribution::Distribution};
 use crate::{error::GovernanceRewardsError, state::preferences::UserPreferences};
 
+/**
+ * Instruction to update a claim.
+ *
+ * The account signature of this instruction is the same as [RegisterForRewards].
+ */
 #[derive(Accounts)]
 pub struct UpdateRegistration<'info> {
     /// CHECK: Manually deserialized
@@ -14,6 +19,12 @@ pub struct UpdateRegistration<'info> {
     #[account(mut)]
     distribution: Box<Account<'info, Distribution>>,
 
+    /**
+     * User claim preferences.
+     *
+     * This account does not have the be initialized when it is passed to the program.
+     * If an empty account is provided, default preferences will be used.
+     */
     /// CHECK: Manually deserialized
     #[account(
         seeds = [distribution.realm.as_ref(), b"preferences".as_ref(), registrant.key().as_ref()],
