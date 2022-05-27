@@ -1,13 +1,13 @@
 use anchor_lang::prelude::*;
 
 #[account]
-#[derive(Default, Copy)]
+#[derive(Default, Copy, Debug)]
 pub struct UserPreferences {
     pub preferred_mint: Option<Pubkey>,
     pub resolution_preference: ResolutionPreference,
 }
 
-#[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone)]
+#[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, Debug)]
 pub enum ResolutionPreference {
     Wallet,
     Escrow,

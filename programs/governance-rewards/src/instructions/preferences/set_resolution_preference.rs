@@ -5,7 +5,9 @@ use crate::state::preferences::{ResolutionPreference, UserPreferences};
 #[derive(Accounts)]
 pub struct SetResolutionPreference<'info> {
     #[account(
-        mut,
+        init_if_needed,
+        payer = user,
+        space = 8 + std::mem::size_of::<UserPreferences>(),
         seeds = [realm.key().as_ref(), b"preferences".as_ref(), user.key().as_ref()],
         bump
     )]
@@ -14,7 +16,10 @@ pub struct SetResolutionPreference<'info> {
     /// CHECK: Not read
     realm: AccountInfo<'info>,
 
+    #[account(mut)]
     user: Signer<'info>,
+
+    system_program: Program<'info, System>,
 }
 
 pub fn set_resolution_preference(

@@ -37,6 +37,53 @@ async fn test_create_distribution() -> TestOutcome {
 }
 
 #[tokio::test]
+async fn test_create_distribution_with_multiple_funding_sources() -> TestOutcome {
+    // Arrange
+    let mut governance_rewards_test = GovernanceRewardsTest::start_new().await;
+    let realm_cookie = governance_rewards_test.governance.with_realm().await?;
+    let key_cookie = governance_rewards_test.with_distribution_keypair();
+
+    let funding_amount = 100;
+    let funding_mint_1 = governance_rewards_test.bench.with_mint().await?;
+    let funding_account_1 = governance_rewards_test
+        .with_owned_tokens(&funding_mint_1, &key_cookie, funding_amount)
+        .await?;
+
+    let funding_amount = 150;
+    let funding_mint_2 = governance_rewards_test.bench.with_mint().await?;
+    let funding_account_2 = governance_rewards_test
+        .with_owned_tokens(&funding_mint_2, &key_cookie, funding_amount)
+        .await?;
+
+    // Act
+    let distribution_cookie = governance_rewards_test
+        .with_distribution(
+            &realm_cookie,
+            &key_cookie,
+            u64::max_value(),
+            &[&funding_account_1, &funding_account_2],
+        )
+        .await?;
+
+    // Assert
+    let distribution_record = governance_rewards_test
+        .get_distribution_account(distribution_cookie.address)
+        .await;
+
+    assert_eq!(
+        distribution_record.distribution_options[0].unwrap().mint,
+        funding_mint_1.address
+    );
+    assert_eq!(
+        distribution_record.distribution_options[1].unwrap().mint,
+        funding_mint_2.address
+    );
+    assert_eq!(distribution_record.distribution_options[2..8], [None; 6]);
+
+    Ok(())
+}
+
+#[tokio::test]
 async fn test_create_distribution_in_past_error() -> TestOutcome {
     // Arrange
     let mut governance_rewards_test = GovernanceRewardsTest::start_new().await;

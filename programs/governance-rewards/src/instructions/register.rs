@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use solana_program::info;
 use std::mem::size_of;
 
 use crate::state::{addin::VoterWeightRecord, claim_data::ClaimData, distribution::Distribution};
@@ -60,7 +61,9 @@ pub fn register_for_rewards(ctx: Context<RegisterForRewards>) -> Result<()> {
         .checked_add(weight)
         .unwrap();
 
+    msg!("---------------------------------------------------------------------------");
     let preferences = UserPreferences::get_or_default(&ctx.accounts.preferences);
+    msg!(&format!("{:?}", preferences));
 
     let (index, preferred_distribution_option) = ctx
         .accounts

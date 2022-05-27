@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use anchor_lang::{
     prelude::{AccountMeta, Pubkey},
-    AccountSerialize, AnchorSerialize,
+    AccountSerialize, AnchorSerialize, Discriminator,
 };
+use borsh::BorshSerialize;
 use governance_rewards::state::{
     addin::VoterWeightRecord, claim_data::ClaimData, distribution::Distribution,
     distribution_option::DistributionOptions, preferences::UserPreferences,
@@ -208,14 +209,60 @@ impl GovernanceRewardsTest {
         self.bench.with_tokens(mint, &owner, amount).await
     }
 
+    pub async fn with_preferences(
+        &mut self,
+        record: &UserPreferences,
+        realm: &RealmCookie,
+        user: Pubkey,
+    ) -> Result<(), TransportError> {
+        dbg!(UserPreferences::discriminator());
+        let address = UserPreferences::get_address(user, realm.address);
+        self.set_anchor_account(record, address, self.program_id)
+            .await
+    }
+
     pub async fn with_dummy_voter_weight_record(
         &mut self,
         record: &VoterWeightRecord,
         owner: Pubkey,
     ) -> Result<VoterWeightRecordCookie, TransportError> {
         let key = Keypair::new().pubkey();
-        let data = record.try_to_vec().unwrap();
+        self.set_borsht_account(record, key, owner).await?;
 
+        Ok(VoterWeightRecordCookie {
+            address: key,
+            user: record.governing_token_owner,
+            weight: record.voter_weight,
+        })
+    }
+
+    pub async fn set_anchor_account<T: AccountSerialize>(
+        &mut self,
+        record: &T,
+        address: Pubkey,
+        owner: Pubkey,
+    ) -> Result<(), TransportError> {
+        let mut data: Vec<u8> = Vec::new();
+        record.try_serialize(&mut data).unwrap();
+        self.set_account(data, address, owner).await
+    }
+
+    pub async fn set_borsht_account<T: AnchorSerialize>(
+        &mut self,
+        record: &T,
+        address: Pubkey,
+        owner: Pubkey,
+    ) -> Result<(), TransportError> {
+        let data: Vec<u8> = record.try_to_vec().unwrap();
+        self.set_account(data, address, owner).await
+    }
+
+    pub async fn set_account(
+        &mut self,
+        data: Vec<u8>,
+        address: Pubkey,
+        owner: Pubkey,
+    ) -> Result<(), TransportError> {
         let lamports = {
             let rent = self
                 .bench
@@ -226,19 +273,13 @@ impl GovernanceRewardsTest {
                 .await?;
             rent.minimum_balance(data.len())
         };
-
         let mut account_data = AccountSharedData::new(lamports, data.len(), &owner);
         account_data.set_data(data);
         self.bench
             .context
             .borrow_mut()
-            .set_account(&key, &account_data);
-
-        Ok(VoterWeightRecordCookie {
-            address: key,
-            user: record.governing_token_owner,
-            weight: record.voter_weight,
-        })
+            .set_account(&address, &account_data);
+        Ok(())
     }
 
     pub async fn with_registrant(

@@ -32,6 +32,12 @@ impl AccountDeserialize for VoterWeightRecord {
 
 impl AccountSerialize for VoterWeightRecord {}
 
+impl AnchorSerialize for VoterWeightRecord {
+    fn serialize<W: std::io::Write>(&self, writer: &mut W) -> std::io::Result<()> {
+        self.0.serialize(writer)
+    }
+}
+
 impl Deref for VoterWeightRecord {
     type Target = temp_override::VoterWeightRecord;
 
