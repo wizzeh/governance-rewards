@@ -36,14 +36,19 @@ pub struct DistributionOptions([Option<DistributionOption>; 8]);
 
 impl DistributionOptions {
     pub fn pick_by_mint(&mut self, key: Option<Pubkey>) -> Result<(u8, &mut DistributionOption)> {
+        let mut first_valid_mint: Option<(u8, &mut DistributionOption)> = None;
         for (i, option) in self.iter_mut().enumerate() {
             if let Some(option) = option {
                 if key.is_none() || key == Some(option.mint) {
                     return Ok((i as u8, option));
                 }
+                first_valid_mint.get_or_insert((i as u8, option));
             }
         }
 
+        if let Some(default) = first_valid_mint {
+            return Ok(default);
+        }
         Err(GovernanceRewardsError::NoDistributionOptions.into())
     }
 

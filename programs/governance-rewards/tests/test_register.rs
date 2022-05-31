@@ -584,3 +584,90 @@ async fn test_register_with_preferred_mint() -> TestOutcome {
 
     Ok(())
 }
+
+#[tokio::test]
+async fn test_register_with_unavailable_preferred_mint() -> TestOutcome {
+    // Arrange
+    let mut governance_rewards_test = GovernanceRewardsTest::start_new().await;
+    let realm_cookie = governance_rewards_test.governance.with_realm().await?;
+    let key_cookie = governance_rewards_test.with_distribution_keypair();
+
+    let funding_amount = 100;
+    let funding_mint_1 = governance_rewards_test.bench.with_mint().await?;
+    let funding_account_1 = governance_rewards_test
+        .with_owned_tokens(&funding_mint_1, &key_cookie, funding_amount)
+        .await?;
+
+    let funding_amount = 150;
+    let funding_mint_2 = governance_rewards_test.bench.with_mint().await?;
+    let funding_account_2 = governance_rewards_test
+        .with_owned_tokens(&funding_mint_2, &key_cookie, funding_amount)
+        .await?;
+
+    let distribution_cookie = governance_rewards_test
+        .with_distribution(
+            &realm_cookie,
+            &key_cookie,
+            u64::max_value(),
+            &[&funding_account_1, &funding_account_2],
+        )
+        .await?;
+    let token_mint = governance_rewards_test.bench.with_mint().await?;
+    let token_account = governance_rewards_test
+        .with_owned_tokens(&token_mint, &key_cookie, 1)
+        .await?;
+
+    let vote_weight = 10;
+    let vwr = governance_rewards_test
+        .with_dummy_voter_weight_record(
+            &VoterWeightRecord::create_test(
+                realm_cookie.address,
+                token_mint.address,
+                token_account.address,
+                distribution_cookie.address,
+                vote_weight,
+                Some(u64::MAX),
+            ),
+            distribution_cookie.account.voter_weight_program,
+        )
+        .await?;
+
+    governance_rewards_test
+        .with_preferences(
+            &UserPreferences {
+                preferred_mint: Some(Keypair::new().pubkey()),
+                resolution_preference: Default::default(),
+            },
+            &realm_cookie,
+            vwr.user,
+        )
+        .await?;
+    governance_rewards_test.bench.advance_clock().await;
+
+    dbg!(
+        governance_rewards_test
+            .bench
+            .get_anchor_account::<UserPreferences>(UserPreferences::get_address(
+                vwr.user,
+                realm_cookie.address,
+            ))
+            .await
+    );
+
+    // Act
+    governance_rewards_test
+        .with_registrant(&distribution_cookie, &vwr)
+        .await?;
+
+    // Assert
+    let claim_record = governance_rewards_test
+        .bench
+        .get_anchor_account::<ClaimData>(ClaimData::get_address(
+            vwr.user,
+            distribution_cookie.address,
+        ))
+        .await;
+    assert_eq!(claim_record.claim_option, 0);
+
+    Ok(())
+}
