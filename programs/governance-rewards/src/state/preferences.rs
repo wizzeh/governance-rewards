@@ -1,4 +1,5 @@
 use anchor_lang::prelude::*;
+use anchor_spl::associated_token::get_associated_token_address;
 
 #[account]
 #[derive(Default, Copy, Debug)]
@@ -16,6 +17,26 @@ pub enum ResolutionPreference {
 impl Default for ResolutionPreference {
     fn default() -> Self {
         Self::Wallet
+    }
+}
+
+impl ResolutionPreference {
+    pub fn payout_address(&self, user: Pubkey, mint: Pubkey, realm: Pubkey) -> Pubkey {
+        match self {
+            ResolutionPreference::Wallet => get_associated_token_address(&user, &mint),
+            ResolutionPreference::Escrow => {
+                Pubkey::find_program_address(
+                    &[
+                        realm.as_ref(),
+                        b"escrow".as_ref(),
+                        user.as_ref(),
+                        mint.as_ref(),
+                    ],
+                    &crate::ID,
+                )
+                .0
+            }
+        }
     }
 }
 

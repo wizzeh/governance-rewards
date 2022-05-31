@@ -205,15 +205,10 @@ async fn test_register_with_closed_registration_err() -> TestOutcome {
         .await?;
 
     // Act
-    let clock = Clock {
-        unix_timestamp: near_future + 1,
-        ..governance_rewards_test.bench.get_clock().await
-    };
     governance_rewards_test
         .bench
-        .context
-        .borrow_mut()
-        .set_sysvar(&clock);
+        .set_unix_time(near_future + 1)
+        .await;
     let err = governance_rewards_test
         .with_registrant(&distribution_cookie, &vwr)
         .await
@@ -544,15 +539,13 @@ async fn test_register_with_preferred_mint() -> TestOutcome {
         .await?;
     governance_rewards_test.bench.advance_clock().await;
 
-    dbg!(
-        governance_rewards_test
-            .bench
-            .get_anchor_account::<UserPreferences>(UserPreferences::get_address(
-                vwr.user,
-                realm_cookie.address,
-            ))
-            .await
-    );
+    governance_rewards_test
+        .bench
+        .get_anchor_account::<UserPreferences>(UserPreferences::get_address(
+            vwr.user,
+            realm_cookie.address,
+        ))
+        .await;
 
     // Act
     governance_rewards_test
@@ -563,8 +556,6 @@ async fn test_register_with_preferred_mint() -> TestOutcome {
     let distribution_record = governance_rewards_test
         .get_distribution_account(distribution_cookie.address)
         .await;
-
-    dbg!(&distribution_record);
 
     assert_eq!(
         distribution_record.distribution_options[1]

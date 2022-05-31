@@ -27,10 +27,10 @@ pub struct Claim<'info> {
 
     #[account(
         mut,
-        seeds = [distribution.key().as_ref(), b"user data".as_ref(), claimant.key().as_ref()],
+        seeds = [distribution.key().as_ref(), b"claim data".as_ref(), claimant.key().as_ref()],
         bump
     )]
-    user_data: Account<'info, ClaimData>,
+    claim_data: Account<'info, ClaimData>,
 
     /**
      * Account from which to pay out rewards.
@@ -40,7 +40,7 @@ pub struct Claim<'info> {
      */
     #[account(
         mut,
-        address = user_data.chosen_option(&distribution).wallet
+        address = claim_data.chosen_option(&distribution).wallet
     )]
     rewards_account: Account<'info, TokenAccount>,
 
@@ -57,7 +57,7 @@ pub struct Claim<'info> {
      * If `UserPreferences.resolution_preference == Escrow`, this should be the user's
      * escrow wallet for the mint. See `assert_payout_is_escrow` for the PDA seeds.
      */
-    #[account(init_if_needed, payer = caller, space = size_of::<TokenAccount>())]
+    #[account(mut)]
     to_account: Account<'info, TokenAccount>,
 
     /**
@@ -102,12 +102,15 @@ impl<'info> Claim<'info> {
     }
 
     pub fn payout_mint(&self) -> Pubkey {
-        self.user_data.chosen_option(&self.distribution).mint
+        self.claim_data.chosen_option(&self.distribution).mint
     }
 
     pub fn assert_payout_is_ata(&self) -> Result<()> {
-        let expected_address =
-            get_associated_token_address(&self.claimant.key(), &self.payout_mint());
+        let expected_address = ResolutionPreference::Wallet.payout_address(
+            self.claimant.key(),
+            self.payout_mint(),
+            self.distribution.realm,
+        );
 
         require!(
             expected_address == self.to_account.key(),
@@ -129,16 +132,11 @@ impl<'info> Claim<'info> {
 
     pub fn assert_payout_is_escrow(&self) -> Result<()> {
         // TODO create this
-        let expected_address = Pubkey::find_program_address(
-            &[
-                self.distribution.realm.as_ref(),
-                b"escrow".as_ref(),
-                self.claimant.key().as_ref(),
-                self.payout_mint().as_ref(),
-            ],
-            &crate::ID,
-        )
-        .0;
+        let expected_address = ResolutionPreference::Escrow.payout_address(
+            self.claimant.key(),
+            self.payout_mint(),
+            self.distribution.realm,
+        );
 
         require!(
             expected_address == self.to_account.key(),
@@ -155,23 +153,23 @@ pub fn claim(ctx: Context<Claim>) -> Result<()> {
         GovernanceRewardsError::NotInClaimPeriod
     );
     require!(
-        !ctx.accounts.user_data.has_claimed,
+        !ctx.accounts.claim_data.has_claimed,
         GovernanceRewardsError::AlreadyClaimed
     );
 
     let rewards = ctx.accounts.distribution.calculate_rewards(
         ctx.accounts
-            .user_data
+            .claim_data
             .chosen_option(&ctx.accounts.distribution),
-        ctx.accounts.user_data.weight,
+        ctx.accounts.claim_data.weight,
     );
 
-    ctx.accounts.user_data.has_claimed = true;
+    ctx.accounts.claim_data.has_claimed = true;
     ctx.accounts.distribution.total_vote_weight_claimed = ctx
         .accounts
         .distribution
         .total_vote_weight_claimed
-        .checked_add(ctx.accounts.user_data.weight)
+        .checked_add(ctx.accounts.claim_data.weight)
         .unwrap();
 
     let preferences = UserPreferences::get_or_default(&ctx.accounts.preferences);

@@ -187,6 +187,7 @@ async fn test_create_distribution_with_non_token_funding_account_err() -> TestOu
     let key_cookie = governance_rewards_test.with_distribution_keypair();
     let fake_token_cookie = TokenAccountCookie {
         address: Keypair::new().pubkey(),
+        mint: Keypair::new().pubkey(),
     };
 
     // Act

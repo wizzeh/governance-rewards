@@ -1,15 +1,19 @@
 use std::cell::RefCell;
 
 use anchor_lang::{
-    prelude::{Pubkey, Rent},
-    AccountDeserialize,
+    prelude::{Clock, Pubkey, Rent},
+    AccountDeserialize, AccountSerialize, AnchorSerialize,
 };
 
-use anchor_spl::token::spl_token;
+use anchor_spl::{
+    associated_token::get_associated_token_address,
+    token::{spl_token, Token},
+};
 use solana_program::{borsh::try_from_slice_unchecked, system_program};
 use solana_program_test::{ProgramTest, ProgramTestContext};
 use solana_sdk::{
-    account::{Account, ReadableAccount},
+    account::{Account, AccountSharedData, ReadableAccount},
+    feature_set::spl_associated_token_account_v1_0_4,
     instruction::Instruction,
     program_pack::Pack,
     signature::Keypair,
@@ -28,8 +32,11 @@ pub struct MintCookie {
     pub mint_authority: Keypair,
     pub freeze_authority: Option<Keypair>,
 }
+
+#[derive(Debug, Clone, Copy)]
 pub struct TokenAccountCookie {
     pub address: Pubkey,
+    pub mint: Pubkey,
 }
 
 #[derive(Debug)]
@@ -109,6 +116,14 @@ impl ProgramTestBench {
             .unwrap();
     }
 
+    pub async fn set_unix_time(&self, to: i64) {
+        let clock = Clock {
+            unix_timestamp: to,
+            ..self.get_clock().await
+        };
+        self.context.borrow_mut().set_sysvar(&clock);
+    }
+
     pub async fn with_mint(&self) -> Result<MintCookie, TransportError> {
         let mint_keypair = Keypair::new();
         let mint_authority = Keypair::new();
@@ -166,6 +181,7 @@ impl ProgramTestBench {
 
         Ok(TokenAccountCookie {
             address: token_account_keypair.pubkey(),
+            mint: *token_mint,
         })
     }
 
@@ -191,6 +207,7 @@ impl ProgramTestBench {
 
         Ok(TokenAccountCookie {
             address: token_account_keypair.pubkey(),
+            mint: mint_cookie.address,
         })
     }
 
@@ -253,6 +270,35 @@ impl ProgramTestBench {
         .await
     }
 
+    pub async fn create_associated_token_account(
+        &self,
+        user: Pubkey,
+        mint: Pubkey,
+    ) -> Result<TokenAccountCookie, TransportError> {
+        let account = get_associated_token_address(&user, &mint);
+
+        let record = spl_token::state::Account {
+            mint,
+            owner: user,
+            amount: 0,
+            delegate: None.into(),
+            state: spl_token::state::AccountState::Initialized,
+            is_native: None.into(),
+            delegated_amount: 0,
+            close_authority: None.into(),
+        };
+        let mut slice = Vec::<u8>::new();
+        slice.resize(spl_token::state::Account::LEN, 0);
+        record.pack_into_slice(&mut slice);
+        self.set_account(slice, account, anchor_spl::token::ID)
+            .await?;
+
+        Ok(TokenAccountCookie {
+            address: account,
+            mint,
+        })
+    }
+
     #[allow(dead_code)]
     pub async fn with_wallet(&self) -> WalletCookie {
         let account_rent = self.rent.minimum_balance(0);
@@ -295,6 +341,13 @@ impl ProgramTestBench {
             .unwrap()
     }
 
+    pub async fn get_token_account(&self, address: &Pubkey) -> Option<spl_token::state::Account> {
+        let acct = self.get_account_data(*address).await;
+        let acct = spl_token::state::Account::unpack(&acct).unwrap();
+
+        Some(acct)
+    }
+
     #[allow(dead_code)]
     pub async fn get_borsh_account<T: BorshDeserialize>(&self, address: &Pubkey) -> T {
         self.get_account(address)
@@ -321,5 +374,44 @@ impl ProgramTestBench {
         let data = self.get_account_data(address).await;
         let mut data_slice: &[u8] = &data;
         AccountDeserialize::try_deserialize(&mut data_slice).unwrap()
+    }
+
+    pub async fn set_anchor_account<T: AccountSerialize>(
+        &self,
+        record: &T,
+        address: Pubkey,
+        owner: Pubkey,
+    ) -> Result<(), TransportError> {
+        let mut data: Vec<u8> = Vec::new();
+        record.try_serialize(&mut data).unwrap();
+        self.set_account(data, address, owner).await
+    }
+
+    pub async fn set_borsht_account<T: AnchorSerialize>(
+        &self,
+        record: &T,
+        address: Pubkey,
+        owner: Pubkey,
+    ) -> Result<(), TransportError> {
+        let data: Vec<u8> = record.try_to_vec().unwrap();
+        self.set_account(data, address, owner).await
+    }
+
+    pub async fn set_account(
+        &self,
+        data: Vec<u8>,
+        address: Pubkey,
+        owner: Pubkey,
+    ) -> Result<(), TransportError> {
+        let lamports = {
+            let rent = self.context.borrow_mut().banks_client.get_rent().await?;
+            rent.minimum_balance(data.len())
+        };
+        let mut account_data = AccountSharedData::new(lamports, data.len(), &owner);
+        account_data.set_data(data);
+        self.context
+            .borrow_mut()
+            .set_account(&address, &account_data);
+        Ok(())
     }
 }

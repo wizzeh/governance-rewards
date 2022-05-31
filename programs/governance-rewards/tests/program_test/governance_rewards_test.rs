@@ -1,13 +1,17 @@
-use std::sync::Arc;
+use std::{borrow::BorrowMut, sync::Arc};
 
 use anchor_lang::{
     prelude::{AccountMeta, Pubkey},
     AccountSerialize, AnchorSerialize, Discriminator,
 };
+use anchor_spl::token::Mint;
 use borsh::BorshSerialize;
 use governance_rewards::state::{
-    addin::VoterWeightRecord, claim_data::ClaimData, distribution::Distribution,
-    distribution_option::DistributionOptions, preferences::UserPreferences,
+    addin::VoterWeightRecord,
+    claim_data::ClaimData,
+    distribution::Distribution,
+    distribution_option::DistributionOptions,
+    preferences::{ResolutionPreference, UserPreferences},
 };
 use solana_program::instruction::Instruction;
 use solana_program_test::{processor, ProgramTest};
@@ -26,6 +30,7 @@ pub struct DistributionCookie {
     pub address: Pubkey,
     pub admin: Keypair,
     pub account: Distribution,
+    pub funding: Vec<TokenAccountCookie>,
 
     pub registration_cutoff: u64,
 }
@@ -45,6 +50,12 @@ pub struct VoterWeightRecordCookie {
     pub address: Pubkey,
     pub user: Pubkey,
     pub weight: u64,
+}
+
+#[derive(Debug)]
+pub struct PreferenceCookie {
+    pub address: Pubkey,
+    pub resolution: ResolutionPreference,
 }
 
 pub struct GovernanceRewardsTest {
@@ -190,6 +201,7 @@ impl GovernanceRewardsTest {
             account,
             admin,
             registration_cutoff,
+            funding: funding.iter().map(|acct| **acct).collect(),
         })
     }
 
@@ -214,11 +226,17 @@ impl GovernanceRewardsTest {
         record: &UserPreferences,
         realm: &RealmCookie,
         user: Pubkey,
-    ) -> Result<(), TransportError> {
+    ) -> Result<PreferenceCookie, TransportError> {
         dbg!(UserPreferences::discriminator());
         let address = UserPreferences::get_address(user, realm.address);
-        self.set_anchor_account(record, address, self.program_id)
-            .await
+        self.bench
+            .set_anchor_account(record, address, self.program_id)
+            .await?;
+
+        Ok(PreferenceCookie {
+            address,
+            resolution: record.resolution_preference,
+        })
     }
 
     pub async fn with_dummy_voter_weight_record(
@@ -227,59 +245,13 @@ impl GovernanceRewardsTest {
         owner: Pubkey,
     ) -> Result<VoterWeightRecordCookie, TransportError> {
         let key = Keypair::new().pubkey();
-        self.set_borsht_account(record, key, owner).await?;
+        self.bench.set_borsht_account(record, key, owner).await?;
 
         Ok(VoterWeightRecordCookie {
             address: key,
             user: record.governing_token_owner,
             weight: record.voter_weight,
         })
-    }
-
-    pub async fn set_anchor_account<T: AccountSerialize>(
-        &mut self,
-        record: &T,
-        address: Pubkey,
-        owner: Pubkey,
-    ) -> Result<(), TransportError> {
-        let mut data: Vec<u8> = Vec::new();
-        record.try_serialize(&mut data).unwrap();
-        self.set_account(data, address, owner).await
-    }
-
-    pub async fn set_borsht_account<T: AnchorSerialize>(
-        &mut self,
-        record: &T,
-        address: Pubkey,
-        owner: Pubkey,
-    ) -> Result<(), TransportError> {
-        let data: Vec<u8> = record.try_to_vec().unwrap();
-        self.set_account(data, address, owner).await
-    }
-
-    pub async fn set_account(
-        &mut self,
-        data: Vec<u8>,
-        address: Pubkey,
-        owner: Pubkey,
-    ) -> Result<(), TransportError> {
-        let lamports = {
-            let rent = self
-                .bench
-                .context
-                .borrow_mut()
-                .banks_client
-                .get_rent()
-                .await?;
-            rent.minimum_balance(data.len())
-        };
-        let mut account_data = AccountSharedData::new(lamports, data.len(), &owner);
-        account_data.set_data(data);
-        self.bench
-            .context
-            .borrow_mut()
-            .set_account(&address, &account_data);
-        Ok(())
     }
 
     pub async fn with_registrant(
@@ -342,5 +314,73 @@ impl GovernanceRewardsTest {
         Ok(RegistrantCookie {
             user: voter_weight_record_cookie.user,
         })
+    }
+
+    pub async fn claim(
+        &mut self,
+        user: Keypair,
+        account_to_claim_against: Pubkey,
+        mint: Pubkey,
+        distribution: &DistributionCookie,
+        preferences: &PreferenceCookie,
+    ) -> Result<(), TransportError> {
+        self.claim_using_ix(
+            user,
+            account_to_claim_against,
+            mint,
+            distribution,
+            preferences,
+            NopOverride,
+            None,
+        )
+        .await
+    }
+
+    pub async fn claim_using_ix<F: Fn(&mut Instruction)>(
+        &mut self,
+        user: Keypair,
+        account_to_claim_against: Pubkey,
+        mint: Pubkey,
+        distribution: &DistributionCookie,
+        preferences: &PreferenceCookie,
+        instruction_override: F,
+        signers_override: Option<&[&Keypair]>,
+    ) -> Result<(), TransportError> {
+        let data = anchor_lang::InstructionData::data(&governance_rewards::instruction::Claim {});
+        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
+            &governance_rewards::accounts::Claim {
+                distribution: distribution.address,
+                claim_data: ClaimData::get_address(user.pubkey(), distribution.address),
+                rewards_account: account_to_claim_against,
+                payout_authority: Distribution::get_payout_authority(distribution.address),
+                to_account: dbg!(preferences.resolution.payout_address(
+                    user.pubkey(),
+                    mint,
+                    distribution.account.realm,
+                )),
+                preferences: preferences.address,
+                claimant: user.pubkey(),
+                caller: self.bench.payer.pubkey(),
+                token_program: anchor_spl::token::ID,
+                system_program: solana_sdk::system_program::id(),
+            },
+            None,
+        );
+
+        let mut claim_ix = Instruction {
+            program_id: governance_rewards::id(),
+            accounts,
+            data,
+        };
+
+        instruction_override(&mut claim_ix);
+
+        let default_signers = &[&self.bench.payer];
+        let signers = signers_override.unwrap_or(default_signers);
+
+        self.bench
+            .process_transaction(&[claim_ix], Some(signers))
+            .await?;
+        Ok(())
     }
 }
