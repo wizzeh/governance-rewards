@@ -18,6 +18,7 @@ use solana_program_test::{processor, ProgramTest};
 use solana_sdk::{
     account::AccountSharedData, signature::Keypair, signer::Signer, transport::TransportError,
 };
+use spl_governance::tools::spl_token;
 
 use super::{
     governance_test::{GovernanceTest, RealmCookie},
@@ -458,6 +459,41 @@ impl GovernanceRewardsTest {
         };
 
         let signers = &[&self.bench.payer, user];
+
+        self.bench
+            .process_transaction(&[transfer_ix], Some(signers))
+            .await?;
+
+        Ok(())
+    }
+
+    pub async fn reclaim_funds(
+        &self,
+        distribution: &DistributionCookie,
+        from: usize,
+        to: &TokenAccountCookie,
+    ) -> Result<(), TransportError> {
+        let data =
+            anchor_lang::InstructionData::data(&governance_rewards::instruction::ReclaimFunds {});
+        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
+            &governance_rewards::accounts::ReclaimFunds {
+                admin: distribution.admin.pubkey(),
+                from: distribution.funding[from].address,
+                to: to.address,
+                distribution: distribution.address,
+                payout_authority: Distribution::get_payout_authority(distribution.address),
+                token_program: anchor_spl::token::ID,
+            },
+            None,
+        );
+
+        let transfer_ix = Instruction {
+            program_id: governance_rewards::id(),
+            accounts,
+            data,
+        };
+
+        let signers = &[&self.bench.payer, &distribution.admin];
 
         self.bench
             .process_transaction(&[transfer_ix], Some(signers))
