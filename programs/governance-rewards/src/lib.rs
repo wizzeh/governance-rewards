@@ -49,4 +49,12 @@ pub mod governance_rewards {
     ) -> Result<()> {
         instructions::set_resolution_preference(ctx, new_preference)
     }
+
+    pub fn create_escrow(ctx: Context<CreateEscrow>) -> Result<()> {
+        instructions::create_escrow(ctx)
+    }
+
+    pub fn transfer_from_escrow(ctx: Context<TransferFromEscrow>, amount: u64) -> Result<()> {
+        instructions::transfer_from_escrow(ctx, amount)
+    }
 }

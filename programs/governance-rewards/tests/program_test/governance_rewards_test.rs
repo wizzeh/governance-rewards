@@ -1,7 +1,7 @@
 use std::{borrow::BorrowMut, sync::Arc};
 
 use anchor_lang::{
-    prelude::{AccountMeta, Pubkey},
+    prelude::{AccountMeta, Pubkey, Sysvar},
     AccountSerialize, AnchorSerialize, Discriminator,
 };
 use anchor_spl::token::Mint;
@@ -381,6 +381,90 @@ impl GovernanceRewardsTest {
         self.bench
             .process_transaction(&[claim_ix], Some(signers))
             .await?;
+        Ok(())
+    }
+
+    pub async fn with_escrow(
+        &self,
+        user: &Pubkey,
+        mint: &Pubkey,
+        realm: &RealmCookie,
+    ) -> Result<Pubkey, TransportError> {
+        let data =
+            anchor_lang::InstructionData::data(&governance_rewards::instruction::CreateEscrow {});
+        let address = ResolutionPreference::Escrow.payout_address(*user, *mint, realm.address);
+        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
+            &governance_rewards::accounts::CreateEscrow {
+                token_program: anchor_spl::token::ID,
+                system_program: solana_sdk::system_program::id(),
+                escrow: address,
+                escrow_authority: governance_rewards::instructions::get_escrow_authority(
+                    realm.address,
+                ),
+                realm: realm.address,
+                mint: *mint,
+                user: *user,
+                payer: self.bench.payer.pubkey(),
+                rent: solana_sdk::sysvar::rent::id(),
+            },
+            None,
+        );
+
+        let create_ix = Instruction {
+            program_id: governance_rewards::id(),
+            accounts,
+            data,
+        };
+
+        let signers = &[&self.bench.payer];
+
+        self.bench
+            .process_transaction(&[create_ix], Some(signers))
+            .await?;
+
+        Ok(address)
+    }
+
+    pub async fn transfer_from_escrow(
+        &self,
+        escrow: &Pubkey,
+        user: &Keypair,
+        mint: &Pubkey,
+        realm: &RealmCookie,
+        amount: u64,
+    ) -> Result<(), TransportError> {
+        let data = anchor_lang::InstructionData::data(
+            &governance_rewards::instruction::TransferFromEscrow { amount },
+        );
+        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
+            &governance_rewards::accounts::CreateEscrow {
+                token_program: anchor_spl::token::ID,
+                system_program: solana_sdk::system_program::id(),
+                escrow: *escrow,
+                escrow_authority: governance_rewards::instructions::get_escrow_authority(
+                    realm.address,
+                ),
+                realm: realm.address,
+                mint: *mint,
+                user: user.pubkey(),
+                payer: self.bench.payer.pubkey(),
+                rent: solana_sdk::sysvar::rent::id(),
+            },
+            None,
+        );
+
+        let transfer_ix = Instruction {
+            program_id: governance_rewards::id(),
+            accounts,
+            data,
+        };
+
+        let signers = &[&self.bench.payer, user];
+
+        self.bench
+            .process_transaction(&[transfer_ix], Some(signers))
+            .await?;
+
         Ok(())
     }
 }
