@@ -4,7 +4,7 @@ use anchor_lang::{
     prelude::{AccountMeta, Pubkey, Sysvar},
     AccountSerialize, AnchorSerialize, Discriminator,
 };
-use anchor_spl::token::Mint;
+use anchor_spl::token::{Mint, Token};
 use borsh::BorshSerialize;
 use governance_rewards::state::{
     addin::VoterWeightRecord,
@@ -429,26 +429,24 @@ impl GovernanceRewardsTest {
         &self,
         escrow: &Pubkey,
         user: &Keypair,
-        mint: &Pubkey,
         realm: &RealmCookie,
+        to: &TokenAccountCookie,
         amount: u64,
     ) -> Result<(), TransportError> {
         let data = anchor_lang::InstructionData::data(
             &governance_rewards::instruction::TransferFromEscrow { amount },
         );
         let accounts = anchor_lang::ToAccountMetas::to_account_metas(
-            &governance_rewards::accounts::CreateEscrow {
+            &governance_rewards::accounts::TransferFromEscrow {
                 token_program: anchor_spl::token::ID,
-                system_program: solana_sdk::system_program::id(),
                 escrow: *escrow,
                 escrow_authority: governance_rewards::instructions::get_escrow_authority(
                     realm.address,
                 ),
                 realm: realm.address,
-                mint: *mint,
+                mint: to.mint,
+                to_account: to.address,
                 user: user.pubkey(),
-                payer: self.bench.payer.pubkey(),
-                rent: solana_sdk::sysvar::rent::id(),
             },
             None,
         );
