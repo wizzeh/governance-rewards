@@ -80,6 +80,7 @@ async fn test_register() -> TestOutcome {
     assert_eq!(claim_record.claim_option, 0);
     assert_eq!(claim_record.distribution, distribution_cookie.address);
     assert!(!claim_record.has_claimed);
+    assert!(claim_record.has_registered);
     assert_eq!(claim_record.weight, vote_weight);
 
     Ok(())
@@ -433,7 +434,7 @@ async fn test_register_with_no_action_target_vwr_err() -> TestOutcome {
 }
 
 #[tokio::test]
-async fn test_register_twice_err() -> TestOutcome {
+async fn test_register_twice_update() -> TestOutcome {
     // Arrange
     let mut governance_rewards_test = GovernanceRewardsTest::start_new().await;
     let realm_cookie = governance_rewards_test.governance.with_realm().await?;
@@ -468,14 +469,37 @@ async fn test_register_twice_err() -> TestOutcome {
     governance_rewards_test.bench.advance_clock().await;
 
     // Act
-    let err = governance_rewards_test
+    let registrant = governance_rewards_test
         .with_registrant(&distribution_cookie, &vwr)
-        .await
-        .err()
-        .unwrap();
+        .await?;
 
     // Assert
-    assert_ix_err(err, InstructionError::Custom(0));
+    let distribution_record = governance_rewards_test
+        .get_distribution_account(distribution_cookie.address)
+        .await;
+
+    assert_eq!(distribution_record.total_vote_weight, vote_weight);
+    assert_eq!(distribution_record.total_vote_weight_claimed, 0);
+
+    assert_eq!(
+        distribution_record.distribution_options[0]
+            .unwrap()
+            .total_vote_weight,
+        vote_weight
+    );
+
+    let claim_record = governance_rewards_test
+        .bench
+        .get_anchor_account::<ClaimData>(ClaimData::get_address(
+            vwr.user,
+            distribution_cookie.address,
+        ))
+        .await;
+    assert_eq!(claim_record.claim_option, 0);
+    assert_eq!(claim_record.distribution, distribution_cookie.address);
+    assert!(!claim_record.has_claimed);
+    assert!(claim_record.has_registered);
+    assert_eq!(claim_record.weight, vote_weight);
 
     Ok(())
 }

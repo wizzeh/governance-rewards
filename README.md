@@ -3,7 +3,7 @@
 ## Instructions
 ### Core
 - `create_distribution`: A Distribution is the core data structure of this plugin. A Distribution has two phases: the registration phase, and the claim phase. When creating a distribution you must supply the timestamp of the end of the registration phase.
-- `register` and `update_registration`: Called by a user with a voter weight record to register for rewards.
+- `register`: Called by a user with a voter weight record to register for rewards or update a registration.
 - `claim`: Called after the registration phase ends to disburse rewards.
 
 ### User Preferences

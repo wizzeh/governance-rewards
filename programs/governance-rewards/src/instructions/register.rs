@@ -45,7 +45,7 @@ pub struct RegisterForRewards<'info> {
      * This account will track information about a user's claims on this distribution.
      */
     #[account(
-        init,
+        init_if_needed,
         space = 8 + size_of::<ClaimData>(),
         payer = payer,
         seeds = [distribution.key().as_ref(), b"claim data".as_ref(), registrant.key().as_ref()],
@@ -98,11 +98,37 @@ pub fn register_for_rewards(ctx: Context<RegisterForRewards>) -> Result<()> {
         .checked_add(weight)
         .unwrap();
 
+    if ctx.accounts.claim_data.has_registered {
+        let old_weight = ctx.accounts.claim_data.weight;
+        msg!(&format!("{:}", ctx.accounts.claim_data.claim_option));
+        msg!("---------------------------------");
+
+        // Remove vote weight from total
+        ctx.accounts.distribution.total_vote_weight = ctx
+            .accounts
+            .distribution
+            .total_vote_weight
+            .checked_sub(old_weight)
+            .unwrap();
+
+        // Remove vote weight from old distribution option
+        let old_option = &mut ctx.accounts.distribution.distribution_options
+            [ctx.accounts.claim_data.claim_option as usize]
+            .unwrap();
+        old_option.total_vote_weight = old_option
+            .total_vote_weight
+            .checked_sub(old_weight)
+            .unwrap();
+        ctx.accounts.distribution.distribution_options
+            [ctx.accounts.claim_data.claim_option as usize] = Some(*old_option);
+    }
+
     ctx.accounts.claim_data.set_inner(ClaimData {
         weight,
         distribution: ctx.accounts.distribution.key(),
         claim_option: index,
         has_claimed: false,
+        has_registered: true,
     });
 
     Ok(())
