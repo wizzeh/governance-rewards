@@ -11,6 +11,10 @@ User preferences are realm-wide.
 - `set_preferred_mint`: Called to set the preferred currency for Distributions with multiple options.
 - `set_resolution_preference`: Called to set the preferred resolution preference. Options are direct payout and escrow.
 
+### Escrow
+- `create_escrow`: Called to create an escrow payout account if required.
+- `transfer_from_escrow`: Called to release funds from escrow.
+
 ### Reclaim
 - `reclaim_funds`: Called to reclaim excess funding from the Distribution after the registration period ends.
 - `reclaim_user_data`: Called to reclaim rent for user claim data after the claim has been paid out.
