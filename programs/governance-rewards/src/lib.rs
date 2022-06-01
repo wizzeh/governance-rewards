@@ -49,8 +49,4 @@ pub mod governance_rewards {
     ) -> Result<()> {
         instructions::set_resolution_preference(ctx, new_preference)
     }
-
-    pub fn update_registration(ctx: Context<UpdateRegistration>) -> Result<()> {
-        instructions::update_registration(ctx)
-    }
 }

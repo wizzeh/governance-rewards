@@ -149,12 +149,12 @@ impl<'info> Claim<'info> {
 
 pub fn claim(ctx: Context<Claim>) -> Result<()> {
     require!(
-        ctx.accounts.distribution.can_claim(),
-        GovernanceRewardsError::NotInClaimPeriod
-    );
-    require!(
         !ctx.accounts.claim_data.has_claimed,
         GovernanceRewardsError::AlreadyClaimed
+    );
+    require!(
+        ctx.accounts.distribution.can_claim(),
+        GovernanceRewardsError::NotInClaimPeriod
     );
 
     let rewards = ctx.accounts.distribution.calculate_rewards(

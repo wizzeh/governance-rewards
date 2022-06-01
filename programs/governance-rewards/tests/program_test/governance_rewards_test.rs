@@ -318,7 +318,7 @@ impl GovernanceRewardsTest {
 
     pub async fn claim(
         &mut self,
-        user: Keypair,
+        user: &Keypair,
         account_to_claim_against: Pubkey,
         mint: Pubkey,
         distribution: &DistributionCookie,
@@ -338,7 +338,7 @@ impl GovernanceRewardsTest {
 
     pub async fn claim_using_ix<F: Fn(&mut Instruction)>(
         &mut self,
-        user: Keypair,
+        user: &Keypair,
         account_to_claim_against: Pubkey,
         mint: Pubkey,
         distribution: &DistributionCookie,

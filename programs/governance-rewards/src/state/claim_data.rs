@@ -9,6 +9,7 @@ pub struct ClaimData {
     pub distribution: Pubkey,
     pub claim_option: u8,
     pub has_claimed: bool,
+    pub has_registered: bool,
 }
 
 impl ClaimData {
