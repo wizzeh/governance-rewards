@@ -41,6 +41,6 @@ pub struct CreateEscrow<'info> {
     rent: Sysvar<'info, Rent>,
 }
 
-pub fn create_escrow(ctx: Context<CreateEscrow>) -> Result<()> {
+pub fn create_escrow(_ctx: Context<CreateEscrow>) -> Result<()> {
     Ok(())
 }

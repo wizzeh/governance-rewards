@@ -1,9 +1,5 @@
 use anchor_lang::prelude::*;
-use anchor_spl::{
-    associated_token::get_associated_token_address,
-    token::{self, Token, TokenAccount},
-};
-use std::mem::size_of;
+use anchor_spl::token::{self, Token, TokenAccount};
 
 use crate::{
     distribution_payout_seeds,
@@ -131,7 +127,6 @@ impl<'info> Claim<'info> {
     }
 
     pub fn assert_payout_is_escrow(&self) -> Result<()> {
-        // TODO create this
         let expected_address = ResolutionPreference::Escrow.payout_address(
             self.claimant.key(),
             self.payout_mint(),
