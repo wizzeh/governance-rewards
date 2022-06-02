@@ -71,7 +71,8 @@ impl Unvalidated<VoterWeightRecord> {
             GovernanceRewardsError::WrongAction
         );
         require!(
-            self.inner.weight_action_target == Some(distribution.key()),
+            self.inner.weight_action_target.is_none()
+                || self.inner.weight_action_target == Some(distribution.key()),
             GovernanceRewardsError::WrongActionTarget
         );
         require!(

@@ -393,47 +393,6 @@ async fn test_register_with_wrong_action_target_vwr_err() -> TestOutcome {
 }
 
 #[tokio::test]
-async fn test_register_with_no_action_target_vwr_err() -> TestOutcome {
-    // Arrange
-    let mut governance_rewards_test = GovernanceRewardsTest::start_new().await;
-    let realm_cookie = governance_rewards_test.governance.with_realm().await?;
-    let key_cookie = governance_rewards_test.with_distribution_keypair();
-    let distribution_cookie = governance_rewards_test
-        .with_funded_distribution(&realm_cookie, &key_cookie, u64::max_value())
-        .await?;
-    let token_mint = governance_rewards_test.bench.with_mint().await?;
-    let token_account = governance_rewards_test
-        .with_owned_tokens(&token_mint, &key_cookie, 1)
-        .await?;
-
-    let vote_weight = 10;
-    let mut vwr_data = VoterWeightRecord::create_test(
-        realm_cookie.address,
-        token_mint.address,
-        token_account.address,
-        distribution_cookie.address,
-        vote_weight,
-        Some(u64::MAX),
-    );
-    vwr_data.weight_action_target = None;
-    let vwr = governance_rewards_test
-        .with_dummy_voter_weight_record(&vwr_data, distribution_cookie.account.voter_weight_program)
-        .await?;
-
-    // Act
-    let err = governance_rewards_test
-        .with_registrant(&distribution_cookie, &vwr)
-        .await
-        .err()
-        .unwrap();
-
-    // Assert
-    assert_governance_rewards_err(err, GovernanceRewardsError::WrongActionTarget);
-
-    Ok(())
-}
-
-#[tokio::test]
 async fn test_register_twice_update() -> TestOutcome {
     // Arrange
     let mut governance_rewards_test = GovernanceRewardsTest::start_new().await;
