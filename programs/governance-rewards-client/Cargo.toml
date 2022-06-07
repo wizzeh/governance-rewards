@@ -7,5 +7,6 @@ version = "0.1.0"
 
 [dependencies]
 anchor-lang = "0.24.2"
+anchor-spl = "0.24.2"
 governance-rewards = {path = "../governance-rewards"}
 solana-sdk = "^1.9.22"
