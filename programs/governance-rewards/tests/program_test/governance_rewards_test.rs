@@ -330,32 +330,16 @@ impl GovernanceRewardsTest {
         instruction_override: F,
         signers_override: Option<&[&Keypair]>,
     ) -> Result<(), TransportError> {
-        let data = anchor_lang::InstructionData::data(&governance_rewards::instruction::Claim {});
-        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
-            &governance_rewards::accounts::Claim {
-                distribution: distribution.address,
-                claim_data: ClaimData::get_address(user.pubkey(), distribution.address),
-                rewards_account: account_to_claim_against,
-                payout_authority: Distribution::get_payout_authority(distribution.address),
-                to_account: dbg!(preferences.resolution.payout_address(
-                    user.pubkey(),
-                    mint,
-                    distribution.account.realm,
-                )),
-                preferences: preferences.address,
-                claimant: user.pubkey(),
-                caller: self.bench.payer.pubkey(),
-                token_program: anchor_spl::token::ID,
-                system_program: solana_sdk::system_program::id(),
-            },
-            None,
+        let mut claim_ix = governance_rewards_client::claim(
+            user.pubkey(),
+            distribution.address,
+            distribution.account.realm,
+            account_to_claim_against,
+            preferences
+                .resolution
+                .payout_address(user.pubkey(), mint, distribution.account.realm),
+            self.bench.payer.pubkey(),
         );
-
-        let mut claim_ix = Instruction {
-            program_id: governance_rewards::id(),
-            accounts,
-            data,
-        };
 
         instruction_override(&mut claim_ix);
 
