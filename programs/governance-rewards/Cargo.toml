@@ -23,7 +23,7 @@ anchor-lang = {version = "0.24.2", features = ["init-if-needed"]}
 anchor-spl = "0.24.2"
 borsh = "0.9.1"
 solana-program = "^1.9.22"
-spl-governance = {version = "2.2.4", features = ["no-entrypoint"]}
+spl-governance = {version = "2.2.1", features = ["no-entrypoint"]}
 spl-governance-addin-api = "0.1.2"
 spl-governance-tools = "0.1.2"
 
