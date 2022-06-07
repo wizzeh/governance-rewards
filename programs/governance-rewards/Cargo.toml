@@ -28,5 +28,6 @@ spl-governance-addin-api = "0.1.2"
 spl-governance-tools = "0.1.2"
 
 [dev-dependencies]
+governance-rewards-client = {path = "../governance-rewards-client"}
 solana-program-test = "^1.9.13"
 solana-sdk = "^1.9.22"

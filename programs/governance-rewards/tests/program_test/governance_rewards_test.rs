@@ -276,32 +276,13 @@ impl GovernanceRewardsTest {
         instruction_override: F,
         signers_override: Option<&[&Keypair]>,
     ) -> Result<RegistrantCookie, TransportError> {
-        let data =
-            anchor_lang::InstructionData::data(&governance_rewards::instruction::Register {});
-        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
-            &governance_rewards::accounts::RegisterForRewards {
-                voter_weight_record: voter_weight_record_cookie.address,
-                distribution: distribution_cookie.address,
-                preferences: UserPreferences::get_address(
-                    voter_weight_record_cookie.user,
-                    distribution_cookie.account.realm,
-                ),
-                claim_data: ClaimData::get_address(
-                    voter_weight_record_cookie.user,
-                    distribution_cookie.address,
-                ),
-                registrant: voter_weight_record_cookie.user,
-                payer: self.bench.payer.pubkey(),
-                system_program: solana_sdk::system_program::id(),
-            },
-            None,
+        let mut register_ix = governance_rewards_client::register(
+            voter_weight_record_cookie.user,
+            distribution_cookie.address,
+            distribution_cookie.account.realm,
+            voter_weight_record_cookie.address,
+            self.bench.payer.pubkey(),
         );
-
-        let mut register_ix = Instruction {
-            program_id: governance_rewards::id(),
-            accounts,
-            data,
-        };
 
         instruction_override(&mut register_ix);
 
