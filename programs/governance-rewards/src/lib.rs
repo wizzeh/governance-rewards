@@ -20,8 +20,9 @@ pub mod governance_rewards {
     pub fn create_distribution(
         ctx: Context<CreateDistribution>,
         registration_cutoff: u64,
+        registrar: Option<Pubkey>,
     ) -> Result<()> {
-        instructions::create_distribution(ctx, registration_cutoff)
+        instructions::create_distribution(ctx, registration_cutoff, registrar)
     }
 
     pub fn reclaim_funds(ctx: Context<ReclaimFunds>) -> Result<()> {

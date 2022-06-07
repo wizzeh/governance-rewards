@@ -151,6 +151,7 @@ impl GovernanceRewardsTest {
         let data = anchor_lang::InstructionData::data(
             &governance_rewards::instruction::CreateDistribution {
                 registration_cutoff,
+                registrar: None,
             },
         );
         let admin = Keypair::new();
@@ -195,6 +196,7 @@ impl GovernanceRewardsTest {
             total_vote_weight_claimed: 0,
             distribution_options: DistributionOptions::empty(),
             admin: admin.pubkey(),
+            registrar: None,
         };
 
         Ok(DistributionCookie {

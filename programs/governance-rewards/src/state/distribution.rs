@@ -8,6 +8,7 @@ pub struct Distribution {
     pub registration_period_end_ts: u64,
     pub voter_weight_program: Pubkey,
     pub realm: Pubkey,
+    pub registrar: Option<Pubkey>,
     pub total_vote_weight: u64,
     pub total_vote_weight_claimed: u64,
     pub distribution_options: DistributionOptions,

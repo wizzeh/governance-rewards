@@ -64,6 +64,7 @@ pub struct CreateDistribution<'info> {
 pub fn create_distribution(
     ctx: Context<CreateDistribution>,
     registration_cutoff: u64,
+    registrar: Option<Pubkey>,
 ) -> Result<()> {
     require!(
         registration_cutoff > Clock::get().unwrap().unix_timestamp as u64,
@@ -81,6 +82,7 @@ pub fn create_distribution(
         )?,
         voter_weight_program: ctx.accounts.voter_weight_program.key(),
         admin: ctx.accounts.admin.key(),
+        registrar,
     });
 
     Ok(())
