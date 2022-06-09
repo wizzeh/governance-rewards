@@ -61,3 +61,25 @@ pub fn claim(
         data,
     }
 }
+
+pub fn reclaim_funds(distribution: Pubkey, admin: Pubkey, from: Pubkey, to: Pubkey) -> Instruction {
+    let data =
+        anchor_lang::InstructionData::data(&governance_rewards::instruction::ReclaimFunds {});
+    let accounts = anchor_lang::ToAccountMetas::to_account_metas(
+        &governance_rewards::accounts::ReclaimFunds {
+            admin,
+            from,
+            to,
+            distribution,
+            payout_authority: Distribution::get_payout_authority(distribution),
+            token_program: anchor_spl::token::ID,
+        },
+        None,
+    );
+
+    Instruction {
+        program_id: governance_rewards::id(),
+        accounts,
+        data,
+    }
+}
