@@ -440,25 +440,12 @@ impl GovernanceRewardsTest {
         from: usize,
         to: &TokenAccountCookie,
     ) -> Result<(), TransportError> {
-        let data =
-            anchor_lang::InstructionData::data(&governance_rewards::instruction::ReclaimFunds {});
-        let accounts = anchor_lang::ToAccountMetas::to_account_metas(
-            &governance_rewards::accounts::ReclaimFunds {
-                admin: distribution.admin.pubkey(),
-                from: distribution.funding[from].address,
-                to: to.address,
-                distribution: distribution.address,
-                payout_authority: Distribution::get_payout_authority(distribution.address),
-                token_program: anchor_spl::token::ID,
-            },
-            None,
+        let transfer_ix = governance_rewards_client::reclaim_funds(
+            distribution.address,
+            distribution.admin.pubkey(),
+            distribution.funding[from].address,
+            to.address,
         );
-
-        let transfer_ix = Instruction {
-            program_id: governance_rewards::id(),
-            accounts,
-            data,
-        };
 
         let signers = &[&self.bench.payer, &distribution.admin];
 
