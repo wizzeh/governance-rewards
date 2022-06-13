@@ -1,5 +1,5 @@
+use crate::error::GovernanceRewardsError;
 use anchor_lang::prelude::ERROR_CODE_OFFSET;
-use governance_rewards::error::GovernanceRewardsError;
 // use gpl_nft_voter::error::NftVoterError;
 use solana_program::instruction::InstructionError;
 use solana_sdk::{signature::Keypair, transaction::TransactionError, transport::TransportError};

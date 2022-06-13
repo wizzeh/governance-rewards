@@ -1,18 +1,18 @@
 use std::{borrow::BorrowMut, sync::Arc};
 
-use anchor_lang::{
-    prelude::{AccountMeta, Pubkey, Sysvar},
-    AccountSerialize, AnchorSerialize, Discriminator,
-};
-use anchor_spl::token::{Mint, Token};
-use borsh::BorshSerialize;
-use governance_rewards::state::{
+use crate::state::{
     addin::VoterWeightRecord,
     claim_data::ClaimData,
     distribution::Distribution,
     distribution_option::DistributionOptions,
     preferences::{ResolutionPreference, UserPreferences},
 };
+use anchor_lang::{
+    prelude::{AccountMeta, Pubkey, Sysvar},
+    AccountSerialize, AnchorSerialize, Discriminator,
+};
+use anchor_spl::token::{Mint, Token};
+use borsh::BorshSerialize;
 use solana_program::instruction::Instruction;
 use solana_program_test::{processor, ProgramTest};
 use solana_sdk::{
@@ -71,11 +71,7 @@ fn voter_weight_program() -> Pubkey {
 
 impl GovernanceRewardsTest {
     pub fn add_program(program_test: &mut ProgramTest) {
-        program_test.add_program(
-            "governance_rewards",
-            governance_rewards::id(),
-            processor!(governance_rewards::entry),
-        );
+        program_test.add_program("governance_rewards", crate::id(), processor!(crate::entry));
     }
 
     pub async fn start_new() -> Self {
@@ -84,7 +80,7 @@ impl GovernanceRewardsTest {
         GovernanceRewardsTest::add_program(&mut program_test);
         GovernanceTest::add_program(&mut program_test);
 
-        let program_id = governance_rewards::id();
+        let program_id = crate::id();
 
         let bench = ProgramTestBench::start_new(program_test).await;
         let bench_rc = Arc::new(bench);
@@ -148,16 +144,14 @@ impl GovernanceRewardsTest {
         instruction_override: F,
         signers_override: Option<&[&Keypair]>,
     ) -> Result<DistributionCookie, TransportError> {
-        let data = anchor_lang::InstructionData::data(
-            &governance_rewards::instruction::CreateDistribution {
-                registration_cutoff,
-                registrar: None,
-            },
-        );
+        let data = anchor_lang::InstructionData::data(&crate::instruction::CreateDistribution {
+            registration_cutoff,
+            registrar: None,
+        });
         let admin = Keypair::new();
 
         let mut accounts = anchor_lang::ToAccountMetas::to_account_metas(
-            &governance_rewards::accounts::CreateDistribution {
+            &crate::accounts::CreateDistribution {
                 distribution: key.keypair.pubkey(),
                 payout_authority: Distribution::get_payout_authority(key.keypair.pubkey()),
                 realm: realm_cookie.address,
@@ -174,7 +168,7 @@ impl GovernanceRewardsTest {
         }
 
         let mut create_distribution_ix = Instruction {
-            program_id: governance_rewards::id(),
+            program_id: crate::id(),
             accounts,
             data,
         };
@@ -278,7 +272,7 @@ impl GovernanceRewardsTest {
         instruction_override: F,
         signers_override: Option<&[&Keypair]>,
     ) -> Result<RegistrantCookie, TransportError> {
-        let mut register_ix = governance_rewards_client::register(
+        let mut register_ix = crate::client::register(
             voter_weight_record_cookie.user,
             distribution_cookie.address,
             distribution_cookie.account.realm,
@@ -330,7 +324,7 @@ impl GovernanceRewardsTest {
         instruction_override: F,
         signers_override: Option<&[&Keypair]>,
     ) -> Result<(), TransportError> {
-        let mut claim_ix = governance_rewards_client::claim(
+        let mut claim_ix = crate::client::claim(
             user.pubkey(),
             distribution.address,
             distribution.account.realm,
@@ -358,17 +352,14 @@ impl GovernanceRewardsTest {
         mint: &Pubkey,
         realm: &RealmCookie,
     ) -> Result<Pubkey, TransportError> {
-        let data =
-            anchor_lang::InstructionData::data(&governance_rewards::instruction::CreateEscrow {});
+        let data = anchor_lang::InstructionData::data(&crate::instruction::CreateEscrow {});
         let address = ResolutionPreference::Escrow.payout_address(*user, *mint, realm.address);
         let accounts = anchor_lang::ToAccountMetas::to_account_metas(
-            &governance_rewards::accounts::CreateEscrow {
+            &crate::accounts::CreateEscrow {
                 token_program: anchor_spl::token::ID,
                 system_program: solana_sdk::system_program::id(),
                 escrow: address,
-                escrow_authority: governance_rewards::instructions::get_escrow_authority(
-                    realm.address,
-                ),
+                escrow_authority: crate::instructions::get_escrow_authority(realm.address),
                 realm: realm.address,
                 mint: *mint,
                 user: *user,
@@ -379,7 +370,7 @@ impl GovernanceRewardsTest {
         );
 
         let create_ix = Instruction {
-            program_id: governance_rewards::id(),
+            program_id: crate::id(),
             accounts,
             data,
         };
@@ -401,16 +392,13 @@ impl GovernanceRewardsTest {
         to: &TokenAccountCookie,
         amount: u64,
     ) -> Result<(), TransportError> {
-        let data = anchor_lang::InstructionData::data(
-            &governance_rewards::instruction::TransferFromEscrow { amount },
-        );
+        let data =
+            anchor_lang::InstructionData::data(&crate::instruction::TransferFromEscrow { amount });
         let accounts = anchor_lang::ToAccountMetas::to_account_metas(
-            &governance_rewards::accounts::TransferFromEscrow {
+            &crate::accounts::TransferFromEscrow {
                 token_program: anchor_spl::token::ID,
                 escrow: *escrow,
-                escrow_authority: governance_rewards::instructions::get_escrow_authority(
-                    realm.address,
-                ),
+                escrow_authority: crate::instructions::get_escrow_authority(realm.address),
                 realm: realm.address,
                 mint: to.mint,
                 to_account: to.address,
@@ -420,7 +408,7 @@ impl GovernanceRewardsTest {
         );
 
         let transfer_ix = Instruction {
-            program_id: governance_rewards::id(),
+            program_id: crate::id(),
             accounts,
             data,
         };
@@ -440,7 +428,7 @@ impl GovernanceRewardsTest {
         from: usize,
         to: &TokenAccountCookie,
     ) -> Result<(), TransportError> {
-        let transfer_ix = governance_rewards_client::reclaim_funds(
+        let transfer_ix = crate::client::reclaim_funds(
             distribution.address,
             distribution.admin.pubkey(),
             distribution.funding[from].address,

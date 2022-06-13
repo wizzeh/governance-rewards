@@ -1,4 +1,8 @@
-use anchor_lang::prelude::{Clock, ErrorCode};
+use anchor_lang::prelude::ErrorCode;
+use governance_rewards::program_test::{
+    governance_rewards_test::{GovernanceRewardsTest, VoterWeightRecordCookie},
+    tools::assert_governance_rewards_err,
+};
 use governance_rewards::{
     error::GovernanceRewardsError,
     state::{
@@ -7,17 +11,10 @@ use governance_rewards::{
         preferences::UserPreferences,
     },
 };
-use program_test::{
-    governance_rewards_test::{GovernanceRewardsTest, VoterWeightRecordCookie},
-    tools::{assert_governance_rewards_err, assert_ix_err},
-};
-use solana_program::instruction::InstructionError;
 use solana_program_test::*;
 use solana_sdk::{signature::Keypair, signer::Signer, transport::TransportError};
 
-use crate::program_test::tools::assert_anchor_err;
-
-mod program_test;
+use governance_rewards::program_test::tools::assert_anchor_err;
 
 type TestOutcome = Result<(), TransportError>;
 

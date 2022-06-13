@@ -1064,23 +1064,12 @@ dependencies = [
  "anchor-lang",
  "anchor-spl",
  "borsh",
- "governance-rewards-client",
  "solana-program",
  "solana-program-test",
  "solana-sdk",
  "spl-governance",
  "spl-governance-addin-api",
  "spl-governance-tools",
-]
-
-[[package]]
-name = "governance-rewards-client"
-version = "0.1.2"
-dependencies = [
- "anchor-lang",
- "anchor-spl",
- "governance-rewards",
- "solana-sdk",
 ]
 
 [[package]]
