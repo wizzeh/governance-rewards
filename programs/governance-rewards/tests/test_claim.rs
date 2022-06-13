@@ -1,5 +1,5 @@
-use governance_rewards::program_test::governance_rewards_test::GovernanceRewardsTest;
-use governance_rewards::program_test::tools::assert_governance_rewards_err;
+use crate::program_test::governance_rewards_test::GovernanceRewardsTest;
+use crate::program_test::tools::assert_governance_rewards_err;
 use governance_rewards::{
     error::GovernanceRewardsError,
     state::{
@@ -10,6 +10,8 @@ use governance_rewards::{
 };
 use solana_program_test::tokio;
 use solana_sdk::{signature::Keypair, signer::Signer, transport::TransportError};
+
+mod program_test;
 
 type TestOutcome = Result<(), TransportError>;
 

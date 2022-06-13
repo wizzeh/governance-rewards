@@ -1,7 +1,9 @@
-use governance_rewards::program_test::governance_rewards_test::GovernanceRewardsTest;
+use crate::program_test::governance_rewards_test::GovernanceRewardsTest;
 use solana_program::program_pack::Pack;
 use solana_program_test::tokio;
 use solana_sdk::{signature::Keypair, signer::Signer, transport::TransportError};
+
+mod program_test;
 
 type TestOutcome = Result<(), TransportError>;
 

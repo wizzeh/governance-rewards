@@ -1,14 +1,16 @@
-use governance_rewards::program_test::{
-    governance_rewards_test::GovernanceRewardsTest,
-    tools::{assert_anchor_err, assert_governance_rewards_err},
-};
 use governance_rewards::{
     error::GovernanceRewardsError, state::distribution_option::DistributionOption,
 };
+use program_test::{
+    governance_rewards_test::GovernanceRewardsTest,
+    tools::{assert_anchor_err, assert_governance_rewards_err},
+};
 use solana_sdk::{signature::Keypair, signer::Signer, transport::TransportError};
 
-use governance_rewards::program_test::program_test_bench::TokenAccountCookie;
+use crate::program_test::{program_test_bench::TokenAccountCookie, *};
 use solana_program_test::*;
+
+mod program_test;
 
 type TestOutcome = Result<(), TransportError>;
 

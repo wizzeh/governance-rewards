@@ -1,10 +1,13 @@
-use governance_rewards::program_test::governance_rewards_test::GovernanceRewardsTest;
-use governance_rewards::program_test::tools::assert_governance_rewards_err;
+use crate::program_test::governance_rewards_test::GovernanceRewardsTest;
+use crate::program_test::tools::assert_governance_rewards_err;
 use governance_rewards::{
     error::GovernanceRewardsError, state::distribution_option::DistributionOption,
 };
 use solana_program_test::tokio;
 use solana_sdk::transport::TransportError;
+use solana_sdk::{signature::Keypair, signer::Signer};
+
+mod program_test;
 
 type TestOutcome = Result<(), TransportError>;
 

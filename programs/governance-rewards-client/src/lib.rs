@@ -1,6 +1,6 @@
-use crate::state::distribution::Distribution;
-use crate::state::{claim_data::ClaimData, preferences::UserPreferences};
 use anchor_lang::{prelude::Pubkey, solana_program::instruction::Instruction};
+use governance_rewards::state::distribution::Distribution;
+use governance_rewards::state::{claim_data::ClaimData, preferences::UserPreferences};
 
 pub fn register(
     user: Pubkey,
@@ -9,9 +9,9 @@ pub fn register(
     voter_weight_record: Pubkey,
     payer: Pubkey,
 ) -> Instruction {
-    let data = anchor_lang::InstructionData::data(&crate::instruction::Register {});
+    let data = anchor_lang::InstructionData::data(&governance_rewards::instruction::Register {});
     let accounts = anchor_lang::ToAccountMetas::to_account_metas(
-        &crate::accounts::RegisterForRewards {
+        &governance_rewards::accounts::RegisterForRewards {
             voter_weight_record,
             distribution,
             preferences: UserPreferences::get_address(user, realm),
@@ -24,7 +24,7 @@ pub fn register(
     );
 
     Instruction {
-        program_id: crate::id(),
+        program_id: governance_rewards::id(),
         accounts,
         data,
     }
@@ -38,9 +38,9 @@ pub fn claim(
     to_account: Pubkey,
     payer: Pubkey,
 ) -> Instruction {
-    let data = anchor_lang::InstructionData::data(&crate::instruction::Claim {});
+    let data = anchor_lang::InstructionData::data(&governance_rewards::instruction::Claim {});
     let accounts = anchor_lang::ToAccountMetas::to_account_metas(
-        &crate::accounts::Claim {
+        &governance_rewards::accounts::Claim {
             caller: payer,
             claimant: user,
             distribution,
@@ -56,16 +56,17 @@ pub fn claim(
     );
 
     Instruction {
-        program_id: crate::id(),
+        program_id: governance_rewards::id(),
         accounts,
         data,
     }
 }
 
 pub fn reclaim_funds(distribution: Pubkey, admin: Pubkey, from: Pubkey, to: Pubkey) -> Instruction {
-    let data = anchor_lang::InstructionData::data(&crate::instruction::ReclaimFunds {});
+    let data =
+        anchor_lang::InstructionData::data(&governance_rewards::instruction::ReclaimFunds {});
     let accounts = anchor_lang::ToAccountMetas::to_account_metas(
-        &crate::accounts::ReclaimFunds {
+        &governance_rewards::accounts::ReclaimFunds {
             admin,
             from,
             to,
@@ -77,7 +78,7 @@ pub fn reclaim_funds(distribution: Pubkey, admin: Pubkey, from: Pubkey, to: Pubk
     );
 
     Instruction {
-        program_id: crate::id(),
+        program_id: governance_rewards::id(),
         accounts,
         data,
     }

@@ -1,12 +1,8 @@
 use crate::state::preferences::ResolutionPreference;
 use instructions::*;
 
-#[cfg(feature = "client")]
-pub mod client;
 pub mod error;
 pub mod instructions;
-#[cfg(feature = "program-test")]
-pub mod program_test;
 pub mod state;
 
 use anchor_lang::prelude::*;
