@@ -31,6 +31,7 @@ pub struct CreateEscrow<'info> {
     /// CHECK: Not read
     user: AccountInfo<'info>,
 
+    /// CHECK: Not read
     #[account(mut)]
     payer: AccountInfo<'info>,
 
