@@ -52,5 +52,5 @@ jobs:
         shell: bash
 
       - name: Run Soteria
-        run: cd programs/voter-stake-registry/ && soteria -analyzeAll .
+        run: cd programs/governance-rewards/ && soteria -analyzeAll .
         shell: bash
