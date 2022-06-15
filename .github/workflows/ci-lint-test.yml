@@ -1,7 +1,7 @@
 name: Lint and Test
 on:
   push:
-    branches: master
+    branches: [main]
   pull_request:
 
 env:
@@ -52,7 +52,7 @@ jobs:
           toolchain: ${{ env.RUST_TOOLCHAIN }}
       - name: Cache dependencies
         uses: Swatinem/rust-cache@v1
-        
+
       # Install Solana
       - name: Cache Solana binaries
         uses: actions/cache@v2

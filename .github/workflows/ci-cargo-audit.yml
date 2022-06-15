@@ -4,7 +4,7 @@ name: Rust Cargo Audit
 
 on:
   push:
-    branches: master
+    branches: [main]
   pull_request:
 
   # Allowing manual runs with ability to choose branch
@@ -12,18 +12,18 @@ on:
 
 # Optimisation option by targeting direct paths to only scan when there are changes to dependencies in the push/PR
 #  push:
-#    paths: 
+#    paths:
 #      - 'Cargo.toml'
 #      - 'Cargo.lock'
 #  pull_request:
-#    paths: 
+#    paths:
 #      - 'Cargo.toml'
 #      - 'Cargo.lock'
-      
+
 # Example of running scheduled scans at 6AM UTC every Monday to regularly check for vulnerable dependencies
 #  schedule:
 #  - cron: '0 6 * * 1'
-  
+
 # Run the job
 jobs:
   Cargo-audit:
@@ -32,14 +32,14 @@ jobs:
     steps:
       # Check out GitHub repo
       - uses: actions/checkout@v2
-      
+
       # Install cargo audit
       - name: Install Cargo Audit
         uses: actions-rs/install@v0.1
         with:
           crate: cargo-audit
           version: latest
-          
+
       # Run cargo audit using args from .cargo/audit.toml (ignores, etc.)
       - name: Run Cargo Audit
         run: cargo audit -c always
