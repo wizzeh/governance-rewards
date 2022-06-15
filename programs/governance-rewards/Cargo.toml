@@ -2,7 +2,7 @@
 description = "Created with Anchor"
 edition = "2021"
 name = "governance-rewards"
-version = "0.1.2"
+version = "0.1.3"
 
 [lib]
 crate-type = ["cdylib", "lib"]
@@ -28,6 +28,6 @@ spl-governance-addin-api = "=0.1.1"
 spl-governance-tools = "=0.1.2"
 
 [dev-dependencies]
-governance-rewards-client = {path = "../governance-rewards-client"}
+governance-rewards-client = {path = "../../governance-rewards-client"}
 solana-program-test = "^1.9.13"
 solana-sdk = "^1.9.22"
