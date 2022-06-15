@@ -86,6 +86,7 @@ pub fn create_distribution(
         )?,
         voter_weight_program: ctx.accounts.voter_weight_program.key(),
         admin: ctx.accounts.admin.key(),
+        registrar,
     });
 
     Ok(())

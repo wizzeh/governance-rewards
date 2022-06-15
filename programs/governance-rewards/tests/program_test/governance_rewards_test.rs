@@ -196,6 +196,7 @@ impl GovernanceRewardsTest {
             total_vote_weight_claimed: 0,
             distribution_options: DistributionOptions::empty(),
             admin: admin.pubkey(),
+            registrar: None,
         };
 
         Ok(DistributionCookie {
