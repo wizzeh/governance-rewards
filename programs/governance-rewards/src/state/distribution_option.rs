@@ -15,19 +15,19 @@ pub struct DistributionOption {
 }
 
 impl DistributionOption {
-    fn try_from_account(account_info: &AccountInfo, authority: Pubkey) -> Result<Option<Self>> {
+    fn try_from_account(account_info: &AccountInfo, authority: Pubkey) -> Result<Self> {
         let token_account = Account::<TokenAccount>::try_from(account_info)?;
         if token_account.owner != authority {
             return Err(GovernanceRewardsError::TokenAccountNotOwned.into());
         }
 
-        Ok(Some(DistributionOption {
+        Ok(DistributionOption {
             mint: token_account.mint,
             wallet: token_account.key(),
             total_vote_weight: 0,
             total_amount: token_account.amount,
             extra_reclaimed: false,
-        }))
+        })
     }
 }
 
@@ -61,7 +61,7 @@ impl DistributionOptions {
     pub fn from_accounts(infos: &[AccountInfo], authority: Pubkey) -> Result<Self> {
         let mut options = infos
             .iter()
-            .map(|acct| DistributionOption::try_from_account(acct, authority))
+            .map(|acct| DistributionOption::try_from_account(acct, authority).map(Some))
             .collect::<Result<Vec<_>>>()?;
         options.resize(8, None);
         Ok(DistributionOptions(options.try_into().unwrap()))

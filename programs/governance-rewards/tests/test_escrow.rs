@@ -19,8 +19,14 @@ async fn test_claim_from_escrow() -> TestOutcome {
         .bench
         .create_mint(&mint, &mint_authority.pubkey(), None)
         .await?;
+    let admin = Keypair::new();
     let escrow_address = governance_rewards_test
-        .with_escrow(&user.pubkey(), &mint.pubkey(), &realm_cookie)
+        .with_escrow(
+            &user.pubkey(),
+            &mint.pubkey(),
+            &realm_cookie,
+            &admin.pubkey(),
+        )
         .await?;
 
     let account_info = governance_rewards_test
@@ -49,7 +55,14 @@ async fn test_claim_from_escrow() -> TestOutcome {
 
     // Act
     governance_rewards_test
-        .transfer_from_escrow(&escrow_address, &user, &realm_cookie, &recipient, 100)
+        .transfer_from_escrow(
+            &escrow_address,
+            &user,
+            &realm_cookie,
+            &recipient,
+            &admin,
+            100,
+        )
         .await?;
 
     // Assert

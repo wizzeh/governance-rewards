@@ -11,6 +11,10 @@ use crate::{
  *
  * The caller must provide a registration_cutoff, which specifies the timestamp at
  * which registration will end.
+ *
+ * This instruction accepts up to 8 remaining accounts to be used to fund the
+ * distribution. These accounts should be SPL Token Accounts owned by the payout
+ * authority.
  */
 #[derive(Accounts)]
 pub struct CreateDistribution<'info> {
@@ -82,7 +86,6 @@ pub fn create_distribution(
         )?,
         voter_weight_program: ctx.accounts.voter_weight_program.key(),
         admin: ctx.accounts.admin.key(),
-        registrar,
     });
 
     Ok(())

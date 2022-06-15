@@ -297,11 +297,15 @@ async fn test_claim_to_escrow() -> TestOutcome {
         )
         .await?;
 
+    let escrow_admin = Keypair::new();
+
     let preferences = governance_rewards_test
         .with_preferences(
             &UserPreferences {
                 preferred_mint: None,
-                resolution_preference: ResolutionPreference::Escrow,
+                resolution_preference: ResolutionPreference::Escrow {
+                    admin: escrow_admin.pubkey(),
+                },
             },
             &realm_cookie,
             user.pubkey(),
@@ -317,7 +321,12 @@ async fn test_claim_to_escrow() -> TestOutcome {
     // Act
     let target_payout = distribution_cookie.funding[0];
     let escrow_address = governance_rewards_test
-        .with_escrow(&user.pubkey(), &target_payout.mint, &realm_cookie)
+        .with_escrow(
+            &user.pubkey(),
+            &target_payout.mint,
+            &realm_cookie,
+            &escrow_admin.pubkey(),
+        )
         .await?;
     governance_rewards_test
         .claim(

@@ -8,6 +8,7 @@ pub struct CreateEscrow<'info> {
         payer = payer,
         seeds = [
             realm.key().as_ref(),
+            admin.key().as_ref(),
             b"escrow".as_ref(),
             user.key().as_ref(),
             mint.key().as_ref(),
@@ -30,6 +31,9 @@ pub struct CreateEscrow<'info> {
 
     /// CHECK: Not read
     user: AccountInfo<'info>,
+
+    /// CHECK: Not read
+    admin: AccountInfo<'info>,
 
     /// CHECK: Not read
     #[account(mut)]

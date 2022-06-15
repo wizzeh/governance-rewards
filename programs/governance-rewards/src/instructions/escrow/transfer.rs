@@ -8,6 +8,7 @@ pub struct TransferFromEscrow<'info> {
         mut,
         seeds = [
             realm.key().as_ref(),
+            admin.key().as_ref(),
             b"escrow".as_ref(),
             user.key().as_ref(),
             mint.key().as_ref(),
@@ -30,7 +31,9 @@ pub struct TransferFromEscrow<'info> {
     mint: AccountInfo<'info>,
 
     /// CHECK: Not read
-    user: Signer<'info>,
+    user: AccountInfo<'info>,
+
+    admin: Signer<'info>,
 
     token_program: Program<'info, Token>,
 }

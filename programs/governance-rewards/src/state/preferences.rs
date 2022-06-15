@@ -11,7 +11,7 @@ pub struct UserPreferences {
 #[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, Debug)]
 pub enum ResolutionPreference {
     Wallet,
-    Escrow,
+    Escrow { admin: Pubkey },
 }
 
 impl Default for ResolutionPreference {
@@ -24,10 +24,11 @@ impl ResolutionPreference {
     pub fn payout_address(&self, user: Pubkey, mint: Pubkey, realm: Pubkey) -> Pubkey {
         match self {
             ResolutionPreference::Wallet => get_associated_token_address(&user, &mint),
-            ResolutionPreference::Escrow => {
+            ResolutionPreference::Escrow { admin } => {
                 Pubkey::find_program_address(
                     &[
                         realm.as_ref(),
+                        admin.as_ref(),
                         b"escrow".as_ref(),
                         user.as_ref(),
                         mint.as_ref(),

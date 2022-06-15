@@ -196,7 +196,6 @@ impl GovernanceRewardsTest {
             total_vote_weight_claimed: 0,
             distribution_options: DistributionOptions::empty(),
             admin: admin.pubkey(),
-            registrar: None,
         };
 
         Ok(DistributionCookie {
@@ -230,7 +229,6 @@ impl GovernanceRewardsTest {
         realm: &RealmCookie,
         user: Pubkey,
     ) -> Result<PreferenceCookie, TransportError> {
-        dbg!(UserPreferences::discriminator());
         let address = UserPreferences::get_address(user, realm.address);
         self.bench
             .set_anchor_account(record, address, self.program_id)
@@ -357,10 +355,17 @@ impl GovernanceRewardsTest {
         user: &Pubkey,
         mint: &Pubkey,
         realm: &RealmCookie,
+        admin: &Pubkey,
     ) -> Result<Pubkey, TransportError> {
         let data =
             anchor_lang::InstructionData::data(&governance_rewards::instruction::CreateEscrow {});
-        let address = ResolutionPreference::Escrow.payout_address(*user, *mint, realm.address);
+        let address = dbg!(
+            ResolutionPreference::Escrow { admin: *admin }.payout_address(
+                *user,
+                *mint,
+                realm.address,
+            )
+        );
         let accounts = anchor_lang::ToAccountMetas::to_account_metas(
             &governance_rewards::accounts::CreateEscrow {
                 token_program: anchor_spl::token::ID,
@@ -374,6 +379,7 @@ impl GovernanceRewardsTest {
                 user: *user,
                 payer: self.bench.payer.pubkey(),
                 rent: solana_sdk::sysvar::rent::id(),
+                admin: *admin,
             },
             None,
         );
@@ -389,7 +395,6 @@ impl GovernanceRewardsTest {
         self.bench
             .process_transaction(&[create_ix], Some(signers))
             .await?;
-
         Ok(address)
     }
 
@@ -399,6 +404,7 @@ impl GovernanceRewardsTest {
         user: &Keypair,
         realm: &RealmCookie,
         to: &TokenAccountCookie,
+        admin: &Keypair,
         amount: u64,
     ) -> Result<(), TransportError> {
         let data = anchor_lang::InstructionData::data(
@@ -415,6 +421,7 @@ impl GovernanceRewardsTest {
                 mint: to.mint,
                 to_account: to.address,
                 user: user.pubkey(),
+                admin: admin.pubkey(),
             },
             None,
         );
@@ -425,7 +432,7 @@ impl GovernanceRewardsTest {
             data,
         };
 
-        let signers = &[&self.bench.payer, user];
+        let signers = &[&self.bench.payer, admin];
 
         self.bench
             .process_transaction(&[transfer_ix], Some(signers))

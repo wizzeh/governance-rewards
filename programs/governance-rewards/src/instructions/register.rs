@@ -129,6 +129,7 @@ pub fn register_for_rewards(ctx: Context<RegisterForRewards>) -> Result<()> {
         claim_option: index,
         has_claimed: false,
         has_registered: true,
+        belongs_to: ctx.accounts.registrant.key(),
     });
 
     Ok(())

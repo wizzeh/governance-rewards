@@ -34,6 +34,8 @@ pub enum GovernanceRewardsError {
     WrongDistributionForClaim,
     #[msg("Cannot clean up user claims until all claims have been made")]
     CannotCleanUpYet,
+    #[msg("Cannot clean up the user claim of another user")]
+    CannotCleanUpAfterOtherUser,
 
     #[msg("Must be a distribution admin to take this action")]
     AdminOnly,

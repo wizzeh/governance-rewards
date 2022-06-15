@@ -30,5 +30,10 @@ pub fn reclaim_user_data(ctx: Context<ReclaimUserData>) -> Result<()> {
         GovernanceRewardsError::CannotCleanUpYet
     );
 
+    require!(
+        ctx.accounts.claim_data.belongs_to == ctx.accounts.caller.key(),
+        GovernanceRewardsError::CannotCleanUpAfterOtherUser,
+    );
+
     Ok(())
 }
