@@ -8,7 +8,7 @@ pub struct TransferFromEscrow<'info> {
         mut,
         seeds = [
             realm.key().as_ref(),
-            admin.key().as_ref(),
+            escrow_release_admin.key().as_ref(),
             b"escrow".as_ref(),
             user.key().as_ref(),
             mint.key().as_ref(),
@@ -17,12 +17,12 @@ pub struct TransferFromEscrow<'info> {
     )]
     escrow: Account<'info, TokenAccount>,
 
-    #[account(mut, token::mint = escrow.mint)]
+    #[account(mut, associated_token::mint = escrow.mint, associated_token::authority = user)]
     to_account: Account<'info, TokenAccount>,
 
     /// CHECK: Not read
-    #[account(seeds = [b"escrow authority".as_ref(), realm.key().as_ref()], bump)]
-    pub escrow_authority: AccountInfo<'info>,
+    #[account(seeds = [b"escrow owner".as_ref(), realm.key().as_ref()], bump)]
+    pub escrow_owner: AccountInfo<'info>,
 
     /// CHECK: Not read
     realm: AccountInfo<'info>,
@@ -33,7 +33,7 @@ pub struct TransferFromEscrow<'info> {
     /// CHECK: Not read
     user: AccountInfo<'info>,
 
-    admin: Signer<'info>,
+    escrow_release_admin: Signer<'info>,
 
     token_program: Program<'info, Token>,
 }
@@ -42,11 +42,8 @@ pub fn transfer_from_escrow(ctx: Context<TransferFromEscrow>, amount: u64) -> Re
     spl_token::transfer_spl_tokens_signed(
         &ctx.accounts.escrow.to_account_info(),
         &ctx.accounts.to_account.to_account_info(),
-        &ctx.accounts.escrow_authority.to_account_info(),
-        &[
-            b"escrow authority".as_ref(),
-            ctx.accounts.realm.key().as_ref(),
-        ],
+        &ctx.accounts.escrow_owner.to_account_info(),
+        &[b"escrow owner".as_ref(), ctx.accounts.realm.key().as_ref()],
         &crate::ID,
         amount,
         &ctx.accounts.token_program.to_account_info(),

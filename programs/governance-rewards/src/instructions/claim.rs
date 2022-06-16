@@ -126,8 +126,8 @@ impl<'info> Claim<'info> {
         Ok(())
     }
 
-    pub fn assert_payout_is_escrow(&self, admin: Pubkey) -> Result<()> {
-        let expected_address = ResolutionPreference::Escrow { admin }.payout_address(
+    pub fn assert_payout_is_escrow(&self, escrow_admin: Pubkey) -> Result<()> {
+        let expected_address = ResolutionPreference::Escrow { escrow_admin }.payout_address(
             self.claimant.key(),
             self.payout_mint(),
             self.distribution.realm,
@@ -170,7 +170,9 @@ pub fn claim(ctx: Context<Claim>) -> Result<()> {
     let preferences = UserPreferences::get_or_default(&ctx.accounts.preferences);
     match preferences.resolution_preference {
         ResolutionPreference::Wallet => ctx.accounts.assert_payout_is_ata()?,
-        ResolutionPreference::Escrow { admin } => ctx.accounts.assert_payout_is_escrow(admin)?,
+        ResolutionPreference::Escrow { escrow_admin } => {
+            ctx.accounts.assert_payout_is_escrow(escrow_admin)?
+        }
     }
 
     token::transfer(

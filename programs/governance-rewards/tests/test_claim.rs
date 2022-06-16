@@ -304,7 +304,7 @@ async fn test_claim_to_escrow() -> TestOutcome {
             &UserPreferences {
                 preferred_mint: None,
                 resolution_preference: ResolutionPreference::Escrow {
-                    admin: escrow_admin.pubkey(),
+                    escrow_admin: escrow_admin.pubkey(),
                 },
             },
             &realm_cookie,

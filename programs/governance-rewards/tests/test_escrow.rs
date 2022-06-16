@@ -50,7 +50,7 @@ async fn test_claim_from_escrow() -> TestOutcome {
 
     let recipient = governance_rewards_test
         .bench
-        .with_token_account(&mint.pubkey())
+        .create_associated_token_account(user.pubkey(), mint.pubkey())
         .await?;
 
     // Act

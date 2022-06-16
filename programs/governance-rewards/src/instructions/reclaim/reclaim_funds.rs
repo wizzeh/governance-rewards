@@ -15,7 +15,7 @@ pub struct ReclaimFunds<'info> {
     #[account(mut)]
     to: Account<'info, TokenAccount>,
 
-    #[account(mut)]
+    #[account(mut, has_one = admin @ GovernanceRewardsError::AdminOnly)]
     distribution: Box<Account<'info, Distribution>>,
 
     /// CHECK: Not read
@@ -41,10 +41,6 @@ impl<'info> ReclaimFunds<'info> {
 }
 
 pub fn reclaim_funds(ctx: Context<ReclaimFunds>) -> Result<()> {
-    require!(
-        ctx.accounts.distribution.admin == ctx.accounts.admin.key(),
-        GovernanceRewardsError::AdminOnly
-    );
     require!(
         !ctx.accounts.distribution.can_register(),
         GovernanceRewardsError::CannotReclaimFundsYet

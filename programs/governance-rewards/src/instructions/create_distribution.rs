@@ -53,7 +53,7 @@ pub struct CreateDistribution<'info> {
 
     /// CHECK: Not read
     #[account(mut)]
-    pub payer: AccountInfo<'info>,
+    pub payer: Signer<'info>,
 
     /**
      * Admin for the distribution.

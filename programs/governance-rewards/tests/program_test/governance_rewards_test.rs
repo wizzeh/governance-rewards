@@ -360,27 +360,22 @@ impl GovernanceRewardsTest {
     ) -> Result<Pubkey, TransportError> {
         let data =
             anchor_lang::InstructionData::data(&governance_rewards::instruction::CreateEscrow {});
-        let address = dbg!(
-            ResolutionPreference::Escrow { admin: *admin }.payout_address(
-                *user,
-                *mint,
-                realm.address,
-            )
-        );
+        let address = ResolutionPreference::Escrow {
+            escrow_admin: *admin,
+        }
+        .payout_address(*user, *mint, realm.address);
         let accounts = anchor_lang::ToAccountMetas::to_account_metas(
             &governance_rewards::accounts::CreateEscrow {
                 token_program: anchor_spl::token::ID,
                 system_program: solana_sdk::system_program::id(),
                 escrow: address,
-                escrow_authority: governance_rewards::instructions::get_escrow_authority(
-                    realm.address,
-                ),
+                escrow_owner: governance_rewards::instructions::get_escrow_owner(realm.address),
                 realm: realm.address,
                 mint: *mint,
                 user: *user,
                 payer: self.bench.payer.pubkey(),
                 rent: solana_sdk::sysvar::rent::id(),
-                admin: *admin,
+                escrow_release_admin: *admin,
             },
             None,
         );
@@ -415,14 +410,12 @@ impl GovernanceRewardsTest {
             &governance_rewards::accounts::TransferFromEscrow {
                 token_program: anchor_spl::token::ID,
                 escrow: *escrow,
-                escrow_authority: governance_rewards::instructions::get_escrow_authority(
-                    realm.address,
-                ),
+                escrow_owner: governance_rewards::instructions::get_escrow_owner(realm.address),
                 realm: realm.address,
                 mint: to.mint,
                 to_account: to.address,
                 user: user.pubkey(),
-                admin: admin.pubkey(),
+                escrow_release_admin: admin.pubkey(),
             },
             None,
         );

@@ -8,7 +8,7 @@ pub struct Distribution {
     pub registration_period_end_ts: u64,
     pub voter_weight_program: Pubkey,
     pub realm: Pubkey,
-    pub registrar: Option<Pubkey>,
+    pub registrar: Option<Pubkey>, // Used by crank to find valid voters.
     pub total_vote_weight: u64,
     pub total_vote_weight_claimed: u64,
     pub distribution_options: DistributionOptions,
@@ -42,7 +42,10 @@ impl Distribution {
     }
 
     pub fn calculate_unused_rewards(&self, option: DistributionOption) -> u64 {
-        option.total_amount - u64::try_from(self.calculate_total_rewards(option)).unwrap()
+        option
+            .total_amount
+            .checked_sub(u64::try_from(self.calculate_total_rewards(option)).unwrap())
+            .unwrap_or_default()
     }
 
     fn calculate_total_rewards(&self, option: DistributionOption) -> u128 {

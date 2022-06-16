@@ -8,20 +8,20 @@ pub struct CreateEscrow<'info> {
         payer = payer,
         seeds = [
             realm.key().as_ref(),
-            admin.key().as_ref(),
+            escrow_release_admin.key().as_ref(),
             b"escrow".as_ref(),
             user.key().as_ref(),
             mint.key().as_ref(),
         ],
         bump,
         token::mint = mint,
-        token::authority = escrow_authority
+        token::authority = escrow_owner
     )]
     escrow: Account<'info, TokenAccount>,
 
     /// CHECK: Not read
-    #[account(seeds = [b"escrow authority".as_ref(), realm.key().as_ref()], bump)]
-    pub escrow_authority: AccountInfo<'info>,
+    #[account(seeds = [b"escrow owner".as_ref(), realm.key().as_ref()], bump)]
+    pub escrow_owner: AccountInfo<'info>,
 
     /// CHECK: Not read
     realm: AccountInfo<'info>,
@@ -33,7 +33,7 @@ pub struct CreateEscrow<'info> {
     user: AccountInfo<'info>,
 
     /// CHECK: Not read
-    admin: AccountInfo<'info>,
+    escrow_release_admin: AccountInfo<'info>,
 
     /// CHECK: Not read
     #[account(mut)]
